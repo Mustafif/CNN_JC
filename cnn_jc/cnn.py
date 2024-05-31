@@ -39,13 +39,14 @@ class Data:
 
 
 class NeuralNetwork(object):
-    def __init__(self, data, method, loss='mean_squared_error', epochs=0, batch_size=16, activation='relu', layers=4,
+    def __init__(self, data, method, loss='mean_squared_error', neurons=200, epochs=0, batch_size=16, activation='softplus', layers=4,
                  kernel_init=glorot_uniform, dropout=0.5, early_stop=125, lr_patience=40, reduce_lr=0.5,
                  reduce_lr_min=0.000009, **kwargs):
         """
         :param data (Data):  Data class containing the training, validation and testing data
         :param method (keras.api.optimizers):  Optimizer to use for training
         :param loss (str):  Loss function to use for training
+        :parm  neurons(int): Number of neurons in the hidden layers
         :param epochs (int):  Number of epochs to train the model
         :param batch_size (int):  Batch size for training
         :param activation (str):  Activation function to use for hidden layers
@@ -61,6 +62,7 @@ class NeuralNetwork(object):
         self.data = Data(data)
         self.method = method
         self.loss = loss
+        self.neurons = neurons
         self.epochs = epochs
         self.batch_size = batch_size
         self.activation = activation
@@ -78,17 +80,14 @@ class NeuralNetwork(object):
         Creates the Calibration Neural Network model
         """
         x_train = self.data.get_train_data()[0]
-        x_valid = self.data.get_valid_data()[0]
-        x_test = self.data.get_test_data()
         y_train = self.data.get_train_data()[1]
-        y_valid = self.data.get_valid_data()[1]
 
         model = Sequential()
         for i in range(self.layers):
             if i == 0:
-                model.add(Dense(2 ** i, input_shape=(x_train.shape[1],), kernel_initializer=self.kernel_init))
+                model.add(Dense(self.neurons, input_shape=(x_train.shape[1],), kernel_initializer=self.kernel_init))
             else:
-                model.add(Dense(2 ** i, kernel_initializer=self.kernel_init))
+                model.add(Dense(self.neurons, kernel_initializer=self.kernel_init))
             if self.activation == 'elu':
                 model.add(ELU())
             else:
