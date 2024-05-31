@@ -12,6 +12,7 @@ numpy = "^1.26.4"
 dill = "^0.3.8"
 joblib = "^1.4.2"
 pandas = "^2.2.2"
+arch = "^7.0.0"
 
 
 [build-system]
