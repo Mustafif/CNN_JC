@@ -1,10 +1,3 @@
-import unittest
+import cnn_jc
 
-
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
-
-
-if __name__ == '__main__':
-    unittest.main()
+x_train, y_train, x_test = cnn_jc.generate_garch_data(1000, 0, 1, 0.1, 0.1, 0.1)
