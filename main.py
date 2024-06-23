@@ -98,6 +98,7 @@ from scipy.optimize import minimize
 initial_params = [omega, alpha, beta]
 
 # Define a function to update GARCH parameters and recalculate simulated volatility
+# This is where the startingvaluewarning is occuring
 def update_garch_parameters(params):
     garch_model = arch_model(simulated_returns, vol='Garch', p=1, q=1, mean='Zero')
     garch_fit = garch_model.fit(update_freq=0, starting_values=params)
