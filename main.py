@@ -13,9 +13,15 @@ beta = 0.9
 # Number of data points
 n = 1000  
 
-# Generate GARCH(1,1) process
-garch_model = arch_model(None, vol='Garch', p=1, q=1, mean='Zero', dist='Normal')
-simulated_data = garch_model.simulate([omega, alpha, beta], nobs=n)
+# Correctly specifying the model for simulation
+# Note: The simulate method is typically used on fitted model objects. 
+# For generating data directly, we use the arch_model with correct parameters and then simulate.
+garch_model = arch_model(None, p=1, q=1, mean='Zero', vol='Garch', dist='Normal')
+# Setting parameters directly for simulation
+params = np.array([omega, alpha, beta])
+
+# Simulating the GARCH(1,1) process
+simulated_data = garch_model.simulate(params, nobs=n)
 
 # Extract simulated returns and conditional volatility
 simulated_returns = simulated_data['data']
@@ -63,18 +69,28 @@ features_train, features_val, target_train, target_val = train_test_split(featur
 
 from keras.models import Sequential
 from keras.layers import Dense
-
+from keras.layers import Dense, Dropout, BatchNormalization
+from keras.initializers import GlorotUniform
 # Define the ANN architecture
 model = Sequential()
-model.add(Dense(64, input_dim=4, activation='relu'))  # input_dim should be 4 since we have 4 features: 'S', 'K', 'T', 'sigma'
-model.add(Dense(64, activation='relu'))
-model.add(Dense(1))
+neurons = 200
+hidden_layers = 4
+activation = 'relu'
+
+for _ in range(hidden_layers): 
+    model.add(Dense(neurons, activation=activation, kernel_initializer = GlorotUniform()))
+
+model.add(Dense(1, kernel_initializer=GlorotUniform()))
 
 # Compile the model
 model.compile(optimizer='adam', loss='mean_squared_error')
+model.summary()
+
+batch_size = 1024
+epochs = 100
 
 # Train the model
-model.fit(features_train, target_train, epochs=100, batch_size=32, validation_data=(features_val, target_val))
+model.fit(features_train, target_train, epochs=epochs, batch_size=batch_size, validation_data=(features_val, target_val))
 
 from scipy.optimize import minimize
 
@@ -88,6 +104,7 @@ def update_garch_parameters(params):
     return garch_fit.conditional_volatility, garch_fit.loglikelihood
 
 # Joint objective function with batching
+# Is there where we put the joint calibration???
 def joint_objective(params):
     simulated_volatility, loglikelihood = update_garch_parameters(params)
     
