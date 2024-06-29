@@ -1,4 +1,23 @@
-#set heading(outlined: true)
+#outline(
+  title: "Outline", 
+  depth: 4
+)
+#pagebreak()
+#set page(footer: context [
+  #h(1fr)
+  #counter(page).display(
+    "1/1",
+    both: true,
+  )
+])
+
+#set par(leading: 0.55em, first-line-indent: 1.8em, justify: true)
+#set text(font: "New Computer Modern")
+#set heading(numbering: none)
+#show par: set block(spacing: 0.55em)
+#show heading: set block(above: 1.4em, below: 1em)
+
+
 = A Neural Network Based Framework for Financial Models Summary 
 
 == 4.3 Backward Pass (Heston Model)
@@ -8,7 +27,7 @@
 
 === How does this relate to our research?
 
-- We hope to be able to use historical asset prices and option prices to be able to calibrate our parameters. This mean, our input depends on the different parameters that make these prices/returns, which would be strike prices, initial price, rate, time to maturity and the implicit volatility. 
+- We hope to be able to use historical asset prices and option prices to be able to calibrate our parameters. This mean, our input depends on the different parameters that make these prices/returns, which would be strike prices, initial price, rate, time to maturity and the implied volatility. 
 
 - We then send these input to the CaNN where it would train the model
 
@@ -87,30 +106,112 @@ The design will make use of a backward pass artificial neural network, where we 
 Market Data ($S, K, S_0, r, tau$, sigma | $R_t$) → Joint Calibration Neural Network → GARCH Params ($omega, alpha, beta$)
 
 Where we consider the risk neutral parameters:  
-- $S$: Price 
+- $S$: Price (a time series of asset prices eg. (10-year daily prices))
 - $K$: Strike Price
 - $S_0$: Initial Price 
 - $r$: Risk-free rate (fixed)
-- $sigma$: Volatility
+- $sigma$: Implied Volatility
 - $tau$: Time to maturity
 
 And we consider the following physical measure: 
-- $R_t$: Log return at time $t$
+- $R_t$: Log return at time $t$ (several GARCH models)
 
 
 Our goal is to be able to use the Joint Calibration to have the most optimum calibrated GARCH parameters that takes into account both measures. This will come into the calibration phase, where the idea is to utilize the Joint Calibration formula as the objective function for minimization. 
+
+=== Risk Neutralization for One-Component Gaussian Models
+
+- $Q$: Risk-Neutral Measure 
+- $P$: Physical Measure
+
+Using the Radon-Nikodym derivative, we can convert the physical measure to the risk-neutral measure. 
+Let $z_t$ i.i.d $N(0, 1)$, then $gamma_t = 1/2 h_t$ since $exp(gamma_t) = E_"t-1" [exp(epsilon_t)]$
+
+The Radon-Nikodym derivative is defined as:
+
+$
+"dQ"/"dP" bar F_t = exp(-sum^t_"i=1" ((mu_i - r_i)/h_i epsilon_i + 1/2 ((mu_i -r_i)/h_i)^2 h_i))
+$
+
+==== NGARCH(1, 1)
+
+For NGARCH(1, 1) using $epsilon_t^* = epsilon_t + mu_t - r_t$, the volatility process under $Q$ becomes: 
+
+$
+h_t = omega + beta h_"t-1" + alpha (epsilon^*_"t-1" - mu_"t-1" + r_"t-1" )^2  => epsilon^*_t bar F_t tilde N(0, h_t) \
+R_t equiv ln (S_t/S_"t-1" ) = r_t - 1/2 h_t + epsilon^*_t => epsilon^*_t bar F_"t-1" tilde N(0, h_t)\
+E^Q [S_t/S_"t-1" bar F_"t-1"] = exp(r_t)
+$
+
+==== Duan
+
+The Physical GARCH Model Duan (1995) comes in the following form: 
+
+$
+R_t equiv ln (S_t/S_"t-1" ) = r_t + lambda sqrt(h_t) - 1/2 h_t + epsilon_t\
+h_t = omega + beta h_"t-1" + alpha epsilon^2_"t-1"
+$
+
+Assume: 
+- $lambda$: price of risk (const.)
+- $mu_t = r_t + lambda sqrt(h_t)$ or $lambda = (mu_t - r_t)/sqrt(h_t)$
+
+
+This corresponds to the following RN-Derivative: 
+
+$
+"dQ"/"dP" bar F_t = exp(-sum^t_"i=1" (epsilon_i/sqrt(h_i) lambda + 1/2 lambda^2))
+$
+
+With risk-neutral innovations: 
+$
+epsilon^*_t &= epsilon_t + mu_t - r_t \
+&= epsilon_t+lambda sqrt(h_t)
+$
+
+The Risk-Neutral GARCH becomes: 
+
+$
+R_t equiv ln(S_t/S_"t-1") = r-1/2 h_t + epsilon_t^*\
+h_t = omega + beta h_"t-1" + alpha (epsilon_"t-1"^* - lambda sqrt(h_"t-1"))^2
+$
+
+==== HN-GARCH(1, 1)
+
+Starting with the following model of Heston and Nandi (2000): 
+
+$
+R_t equiv ln(S_t/S_"t-1") = r + lambda h_t + epsilon_t\
+h_t = omega + beta h_"t-1" + alpha (z_"t-1" - c sqrt(h_"t-1"))^2
+$
+
+Assume $r_t = r, mu_t = r+lambda h_t + 0.5 h_t$
+
+RN-Derivative: 
+
+$
+"dQ"/"dP" bar F_t = exp(-sum^t_"i=1" ((lambda + 1/2)epsilon_i + 1/2(lambda+1/2)^2 h_i))\
+\
+epsilon_t^* = epsilon_t + lambda h_t + 0.5h_t\
+R_t equiv ln(S_t/S_"t-1") = r-1/2 h_t + epsilon_t^*\
+h_t = omega + beta h_"t-1" + alpha (z^*_"t-1" - (c+lambda + 1/2)sqrt(h_"t-1"))^2
+$
 
 
 === Input Data
 So firstly we need to discuss how we get our input parameters? 
 
 Risk-Neutral Measure: 
-- Option Prices (European, American, Asian, etc.)
+- American Option Prices
 
 Physical Measure: 
 - Historical Asset Prices (change in difference to get log return)
-  - Where: $R_t equiv ln(S_t/S_"t-1")$
-  - Can be easily done using `numpy.diff(numpy.log(S))` 
+  - Where: $R_t equiv ln(S_t/S_"t-1") = mu_t - gamma_t + epsilon_t$
+  - $mu_t$: Conditional mean of the returns at time $t$
+  - Assume $gamma_t$ is defined from $exp(gamma_t) = E_"t-1" [exp(epsilon_t)]$
+  - $epsilon_t$: the normal innovation at time $t$ where $epsilon_t|F_"t-1" tilde N(0, h_t)$
+  - $h_t$: Conditional variance at time $t$
+    - $h_t = omega + alpha epsilon_"t-1"^2 + beta h_"t-1"$
 
 
 === Joint Calibration Neural Network
@@ -163,6 +264,8 @@ The architecture currently will follow simarly to the paper, as the following:
 
 Where we then hope in the regression phase, to be able to use the Joint Calibration formula in a batching method to be able to calibrate our parameters for the GARCH model. 
 
+#pagebreak()
+
 == Essential Equations
 
 These are from GARCH Option Valuation Theory and Evidence: 
@@ -196,14 +299,17 @@ where:
 
 The verga weighted option error follows as: 
 $
-e_"i,t" = (C_"i,t" - C_"i,t" (h_t (xi^*)))/"Vega"_" i,t"
+underbrace(e_"i,t" = (C_"i,t" - C_"i,t" (h_t (xi^*)))/"Vega"_" i,t", 
+    "We may also choose to use relative error if Vega is hard or expensive to calculate"
+)
 $
+
+
 
 where: 
 - $"Vega"_"i,t"$ is the Black-Scholes sensitivity of the option prices with respect to volatility
 - $xi^*$ is the vector of risk-neutral parameters to be estimated 
-- $C_"i,t"$ is the market option price
-- $C_"i,t" (h_t (xi^*))$ is the model price
+- $C_"i,t" - C_"i,t" (h_t (xi^*))$: The corresponding implied volatility from the option price. 
 
 === Joint Log Likelihood
 
@@ -214,32 +320,25 @@ where:
 - $T$ is the number of days in the return sample
 - $N_T$ is the total number of option contracts
 
-== Creating Synthetic Data For European Options and Returns
+#pagebreak()
 
-```python 
-import numpy as np
-from scipy.stats import norm
+== Training Data Generation
 
-# Parameters for GBM
-S0 = 100    # Initial stock price
-r = 0.1    # risk free rate
-sigma = 0.2 # Volatility (annual)
-T = 1.0     # Time period in years
-dt = 1/252  # Time step (daily)
-n_steps = int(T / dt)
 
-# Generate random Brownian motion
-np.random.seed(42)
-W = np.random.standard_normal(size=n_steps)
-W = np.cumsum(W) * np.sqrt(dt)
 
-# Simulate stock prices
-t = np.linspace(0, T, n_steps)
-S = S0 * np.exp((r - 0.5 * sigma**2) * t + sigma * W)
+#align(center)[
+#rect(stroke: color.red)[
+  *TODO: Add American option pricing in Python*\
+  Requires: 
+  - Heston-Nandi GARCH Model
+  - Monte-Carlo Simulation 
+  - Understanding of American Option Pricing
+]  
+#rect(fill: color.yellow)[
+  === Current Idea
 
-# Calculate returns
-returns = (S[1:] - S[:-1]) / S[:-1]
-log_returns = np.diff(np.log(S))
-```
-
-#rect[The goal is to be able to train off of American options using the Willow Tree method to generate synthetic data. ]
+1. Given a set of parameters for GARCH (in Physical measure)
+2. Given the initial asset price $S_0$, use Monte Carlo method to simulate a path of asset prices, 
+$S_1, S_2, ... S_N$, with say $N=500$
+3. Select last 30-50 days on the path, for each day, use the selected asset price as the initial price to generate American option prices with various strike prices (11-17) and maturities (7 days to 1 year). *Pay attention to the transformation from the physical measure to the risk-neutral measure*. 
+]]
