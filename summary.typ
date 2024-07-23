@@ -9,7 +9,7 @@
     "1/1",
     both: true,
   )
-])
+], paper: "us-letter")
 
 #set par(leading: 0.55em, first-line-indent: 1.8em, justify: true)
 #set text(font: "New Computer Modern")
@@ -102,10 +102,23 @@ Computational Cost: CPU, GPU time and Function evaluations
 Our goal is to be able to use two forms of input data to be able to calibrate an optimum parameters of the GARCH(1, 1) model. This will be calibrated using joint calibration which will take into account the log likelihood of returns and option prices to be able to consider both physical and risk neutral measures. 
 
 The design will make use of a backward pass artificial neural network, where we will do the following: 
+#set par(first-line-indent: 0em)
+#let arrow = text(size: 1.5em, "\u{2193}")
 
-Market Data ($S, K, S_0, r, tau$, sigma | $R_t$) → Joint Calibration Neural Network → GARCH Params ($omega, alpha, beta$)
+#align(center)[
+  #stack(
+    dir: ttb,
+    spacing: 1em,
+    align(center)[Market Data ($S, K, S_0, r, tau$, sigma | $R_t$)],
+    arrow,
+    align(center)[Joint Calibration Neural Network],
+    arrow,
+    align(center)[GARCH Params ($omega, alpha, beta, gamma, lambda$)]
+  )
+]
+\
 
-Where we consider the risk neutral parameters:  
+Where we consider the parameters under *P* measure:  
 - $S$: Price (a time series of asset prices eg. (10-year daily prices))
 - $K$: Strike Price
 - $S_0$: Initial Price 
@@ -322,23 +335,4 @@ where:
 
 #pagebreak()
 
-== Training Data Generation
-
-
-
-#align(center)[
-#rect(stroke: color.red)[
-  *TODO: Add American option pricing in Python*\
-  Requires: 
-  - Heston-Nandi GARCH Model
-  - Monte-Carlo Simulation 
-  - Understanding of American Option Pricing
-]  
-#rect(fill: color.yellow)[
-  === Current Idea
-
-1. Given a set of parameters for GARCH (in Physical measure)
-2. Given the initial asset price $S_0$, use Monte Carlo method to simulate a path of asset prices, 
-$S_1, S_2, ... S_N$, with say $N=500$
-3. Select last 30-50 days on the path, for each day, use the selected asset price as the initial price to generate American option prices with various strike prices (11-17) and maturities (7 days to 1 year). *Pay attention to the transformation from the physical measure to the risk-neutral measure*. 
-]]
+#include "datagen.typ"
