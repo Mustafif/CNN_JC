@@ -16,24 +16,27 @@ def Prob(current_ht, next_ht, alpha, beta, gamma, omega):
     Returns:
     p (numpy.ndarray): Transition probability from current_ht to next_ht
     """
-
-    intPoints = (next_ht[:-1] + next_ht[1:]) / 2
-    numHt = len(current_ht)
-    upBound = np.zeros((len(intPoints), numHt))
-    lowBound = np.zeros((len(intPoints), numHt))
-
-    for i in range(numHt):
-        nowHt = current_ht[i]
-        upBound[:, i] = gamma * np.sqrt(nowHt) + np.sqrt((intPoints - beta * nowHt - omega) / alpha)
-        lowBound[:, i] = gamma * np.sqrt(nowHt) - np.sqrt((intPoints - beta * nowHt - omega) / alpha)
-
+    next_ht = np.array(next_ht)
+    int_points = (next_ht[:-1] + next_ht[1:]) / 2
+    print(f"int points {int_points}")
+    num_ht = 1
+    up_bound = np.nan * np.ones(len(int_points))
+    low_bound = np.nan * np.ones(len(int_points))
+    
+    for i in range(num_ht):
+        now_ht = current_ht
+       # now_ht = np.full_like(int_points, now_ht)  # Create an array with the same shape as int_points
+        up_bound[i] = float(gamma) * np.sqrt(now_ht) + np.sqrt((float(int_points - beta) * now_ht - omega) / alpha)
+        low_bound[i] = float(gamma) * np.sqrt(now_ht) - np.sqrt((float(int_points - beta) * now_ht - omega) / alpha)
+    
+    
     if alpha > 0:
-        prob = norm.cdf(np.real(upBound)) - norm.cdf(np.real(lowBound))
-        prob = np.vstack((np.zeros(numHt), prob, np.ones(numHt)))
+        prob = norm.cdf(up_bound) - norm.cdf(low_bound)
+        prob = np.vstack((np.zeros((1, num_ht)), prob, np.ones((1, num_ht))))
         p = np.diff(prob, axis=0).T
     elif alpha < 0:
-        prob = 1 - (norm.cdf(np.real(upBound)) - norm.cdf(np.real(lowBound)))
-        prob = np.vstack((np.ones(numHt), prob, np.zeros(numHt)))
+        prob = 1 - (norm.cdf(up_bound) - norm.cdf(low_bound))
+        prob = np.vstack((np.ones((1, num_ht)), prob, np.zeros((1, num_ht))))
         p = (prob[:-1, :] - prob[1:, :]).T
 
     return p

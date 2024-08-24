@@ -195,7 +195,7 @@ Starting with the following model of Heston and Nandi (2000):
 
 $
 R_t equiv ln(S_t/S_"t-1") = r + lambda h_t + epsilon_t\
-h_t = omega + beta h_"t-1" + alpha (z_"t-1" - c sqrt(h_"t-1"))^2
+h_t = omega + beta h_"t-1" + alpha (epsilon_"t-1" - c sqrt(h_"t-1"))^2
 $
 
 Assume $r_t = r, mu_t = r+lambda h_t + 0.5 h_t$
@@ -207,7 +207,7 @@ $
 \
 epsilon_t^* = epsilon_t + lambda h_t + 0.5h_t\
 R_t equiv ln(S_t/S_"t-1") = r-1/2 h_t + epsilon_t^*\
-h_t = omega + beta h_"t-1" + alpha (z^*_"t-1" - (c+lambda + 1/2)sqrt(h_"t-1"))^2
+h_t = omega + beta h_"t-1" + alpha (epsilon^*_"t-1" - (c+lambda + 1/2)sqrt(h_"t-1"))^2
 $
 
 

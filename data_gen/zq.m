@@ -26,10 +26,10 @@ function [z,q,vzq,kzq] = zq(M,gamma)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if nargin < 2;
+if nargin < 2
     error('Pay attention to your input arguments!');
 end
-if mod(M,2) ~= 0 || M < 0;
+if mod(M,2) ~= 0 || M < 0
     error('M should be positive and even');
 end
 % if gamma < 0 || gamma > 1;
@@ -43,7 +43,7 @@ q(1:M/2) = q(1:M/2)/qsum/2;
 q(end:-1:M/2+1) = q(1:M/2);
 z0 = zeros(1,M);
 z0(1) = norminv(q(1)/2);
-for i = 2:M;
+for i = 2:M
     z0(i) = norminv(sum(q(1:i))-(sum(q(1:i))-sum(q(1:i-1)))/2);
 end
 z = z0;
@@ -59,7 +59,8 @@ z(M) = z0(M) + x;
 % b = (3-q*z.^4')/2/(z(2)^2 - z(M/2)^2)/(z(2)^2-z(1)^2);
 tmp = 1.5 - sum(q(1: M / 2) .* z(1: M / 2) .^ 4);
 a = tmp / (z(1) ^ 2 - z(2) ^ 2) / (z(1) ^ 2 - z(M / 2) ^ 2);
-b = tmp / (z(2) ^ 2 - z(1) ^ 2) / (z(2) ^ 2 - z(M / 2) ^ 2);
+b = tmp / (z(2) ^ 2 - z(1) ^ 2) / (...
+    z(2) ^ 2 - z(M / 2) ^ 2);
 
 q(1) = q(1) + a;
 q(2) = q(2) + b;

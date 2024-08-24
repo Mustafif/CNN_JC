@@ -1,4 +1,4 @@
-function [P_ht_N, P_ht] = Probility_ht(nodes_ht,h0,alpha,beta,gamma,omega)
+function [P_ht_N, P_ht] = Prob_ht(nodes_ht,h0,alpha,beta,gamma,omega)
 %
 % compute the transition probabilities and probability of h_t of the Heston-Nadi GARCH model and
 % construct all tree nodes of h_t

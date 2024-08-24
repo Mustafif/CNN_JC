@@ -1,4 +1,4 @@
-function [nodes_ht, mu,var, k3,k4] = TreeNodes_ht_HN_New(m_h, hd, qht, gamma_h,alpha,beta,gamma,omega,N)
+function [nodes_ht, mu,var, k3,k4] = TreeNodes_ht_HN(m_h, hd, qht, gamma_h,alpha,beta,gamma,omega,N)
 %
 % compute the first four moments of h_t of the Heston-Nadi GARCH model and
 % construct all tree nodes of h_t

@@ -19,23 +19,25 @@ def Prob_ht(nodes_ht, h0, alpha, beta, gamma, omega):
     P_ht (numpy.ndarray): Probability of ht given h0
     """
 
-    M = len(nodes_ht)
-    N = len(nodes_ht[0])
+    m = len(nodes_ht)
+    n = len(nodes_ht[0])
 
-    P_ht = np.zeros((M, N))  # transition probability matrix between two time steps
-    P_ht_N = np.zeros((M, M, N - 1))  # probability for hd->h2d
-
+    p_ht = np.zeros((m, n))
+    p_ht_n = np.zeros((m, m, n - 1))
+    
     curr_h = h0
     next_h = nodes_ht[0]
     p = Prob(curr_h, next_h, alpha, beta, gamma, omega)
-    P_ht[:, 0] = p.reshape(-1)
-
-    for n in range(1, N):
-        next_h = nodes_ht[:, n]
-        for i in range(M):
-            curr_h = nodes_ht[i, n - 1]
+    p_ht[:, 0] = p.flatten()
+    
+    for i in range(1, n):
+        next_h = nodes_ht[:, i]
+        for j in range(m):
+            curr_h = nodes_ht[j, i - 1]
             p = Prob(curr_h, next_h, alpha, beta, gamma, omega)
-            P_ht_N[i, :, n - 1] = p.reshape(-1)
-        P_ht[:, n] = np.dot(P_ht[:, n - 1].reshape(1, -1), P_ht_N[:, :, n - 1]).reshape(-1)
+            p_ht_n[j, :, i - 1] = p.flatten()
+        p_ht[:, i] = (p_ht[:, i - 1].T @ p_ht_n[:, :, i - 1]).T
+    
+    return p_ht_n, p_ht
 
-    return P_ht_N, P_ht
+
