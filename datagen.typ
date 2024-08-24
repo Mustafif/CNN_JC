@@ -26,81 +26,118 @@ $S_1, S_2, ... S_N$, with say $N=500$ (Under *P* measure)
 }
 
 
-// ```Python
-// # Pseudo Code of Pricing American Options By the Willow Tree and Monte Carlo Method
-// # 1. Initialize option parameters
-// T = ... # Time to maturity
-// K = ... # Strike price
-// r = ... # Risk-free rate
-// S_0 = ... # Initial asset price
-// N = ... # Number of paths
-// delta = T/N # Time step
-// h0 = ... # Initial volatility
-// # 2. Initialize HN-GARCH parameters under P Measure
-// alpha = ...
-// beta = ...
-// omega = ...
-// gamma = ...
-// lambda = ...
-// # 3. Initialize Willow Tree parameters
-// m_h = ...
-// m_ht = ...
-// m_x = ...
-// gamma_h = ...
-// gamma_x = ...
-// # 4. Construct the willow tree for ht
-// hd, qhd = genhDelta(h0, beta, alpha, gamma, omega, m_h, gamma_h)
-// nodes_ht = TreeNodes_ht_HN(m_ht, hd, qhd, gamma_h, alpha, beta, gamma, omega, N + 1)
-// P_ht_N, P_ht = Prob_ht(nodes_ht, h0, alpha, beta, gamma, omega)
-// # 5. Construct the willow tree for Xt
-// nodes_Xt, mu, var, k3, k4 = TreeNodes_logSt_HN(m_x, gamma_x, r, hd, qhd, S0, alpha, beta, gamma, omega, N)
-// q_Xt, P_Xt, tmpHt = Prob_Xt(nodes_ht, qhd, nodes_Xt, S0, r, alpha, beta, gamma, omega)
-// nodes_S = np.exp(nodes_Xt)
-// # 6. Generate Data (can possibly be done in parallel or concurrently)
-// days = ...
-// A_prices = np.zeros(days) # American option prices
-// A_sig = np.zeros(days) # Implied volatility
-// A0_prices = np.zeros(days) # Price of option using model parameters
+=== The Steps that we are following: 
 
-// for i in range(days): # Days on the path
-//   CorP = -1 # Call or Put
-//   A_sig[i], A_prices[i], A0_prices[i] = impVol_HN(r, lambda, omega, beta, alpha,
-//                                        ...gamma, h0, S0, K, T, N, m_h, m_x, cor_p)
-// ```
+1. Initialize Option and Monte Carlo Parameters 
+  - `r`: The risk-free rate 
+  - `S0`: The initial asset price 
+  - `h0`: Initial volatility 
+  - `N`: Number of time steps for simulation 
+  - `M`: Number of Monte Carlo paths 
 
-#include_code_file("pseudo_code.m", "matlab")
+2. Initialize HN-GARCH parameters under P measure 
+  - $theta = (alpha, beta, omega, gamma, lambda)$
 
-#pagebreak()
-Functions to be aware of:
-- `genhDelta`: Generates the discrete values and probabilities of a std normal distribution that are used to construct a Willow tree for the conditional variance in the HN model.
+3. Simulate paths using Monte Carlo Simulation 
 
-- `TreeNodes_ht_HN`: Constructs the Willow tree for the conditional variance in the HN model.
-- `Prob_ht`: Calculates the transition probabilities of the nodes in the Willow tree for the conditional variance in the HN model.
+4. Risk Neutralize HN-GARCH parameters
+  - $theta^* = (alpha_Q, rho, omega_Q, gamma_Q, lambda_Q)$
 
-- `TreeNodes_logSt_HN`: Constructs the nodes of the Willow tree for the log asset price in the HN model, as well as the first four moments.
+5. Initialize Willow Tree parameters
 
-- `Prob_Xt`: Calculates the transition probabilities of the nodes in the Willow tree for the log asset price in the HN model.
+6. Generate data for the days up to the maturity
 
-- `impVol_HN`: Calculates the American option price, the implied volatility, and the option price using the model parameters in the HN model.
+#line(length: 100%)
+
+=== Project Structure: 
+
+*MATLAB Files:*
 
 
-
-
-#pagebreak()
-#rect(fill: color.yellow)[
-  *f_hhh Situation*
-  The current dependency on `f_hhh` relies on a MEX file which is compiled from C code, currently
-  the best tool to handle this is `mkoctfile` from Octave. Currently a Matlab native code is giving the
-  following results (from the original demo code Prices)
-]
-#let results = csv("f_hhh_results.csv")
-
+#align(center)[
+  #rect(fill: blue)[
 #table(
-  columns: 4,
-  [Windows f_hhh.mexw64], [Linux f_hhh.m],[Linux f_hhh.mexa64],[Rel Error of f_hhh.m to Mex],
-  ..results.flatten()
+  columns: 3,
+  rows: 6,
+  align: center, 
+  stroke: none,
+  
+    [`American.m`],
+    [`gen_PoWiner.m`],
+    [`nodes_Winer.m`],
+    [`Prob_Xt.m`],
+    [`zq.m`],
+    [`datagen.m`],
+  
+  
+    [`impVol_HN.m`],
+    [`impvol.m`],
+    [`probcali.m`],
+    [`main.m`],
+    [`Prob_ht.m`],
+    [`sign.m`],
+  
+  
+    [`genhDelta.m`],
+    [`Prob.m`],
+    [`TreeNodes_ht_HN.m`],
+    [`Treenodes_JC_h.m`],
+    [`Treenodes_JC_X.m`],
+    [`TreeNodes_logSt_HN.m`],
+  
 )
+]]
 
+
+
+*Dependencies:* `f_hhh.mexa64`
+
+*Output Files:* `annual.csv`, `half.csv`, `quarter.csv`, `week.csv`
+
+#pagebreak()
+
+=== The `datagen()` Function 
+
+#rect(stroke: orange)[
+#include_code_file("data_gen/datagen.m", "matlab")
+]
+
+#pagebreak()
+
+=== The `main` Code 
+
+This will contain generating data for different maturities and configuring the 
+parameters for both the Option and HN-GARCH. 
+
+#rect(stroke: orange)[
+#include_code_file("data_gen/main.m", "matlab")
+]
+
+
+*Downloading the Code*: Available under *#underline(link("https://github.com/Mustafif/CNN_JC/releases/download/alpha.1/data_gen.zip", "Github"))*
+
+
+#pagebreak()
+
+== Generated Data
+
+#let csv_data(path) = align(center)[#table(columns: 2, fill: (rgb("EAF2F5"), none), ..csv(path).flatten())]
+
+=== Week
+
+#csv_data("data_gen/week.csv")
+
+=== 3 Months 
+
+#csv_data("data_gen/quarter.csv")
+
+=== 6 Months 
+
+#csv_data("data_gen/half.csv")
+
+=== One Year
+
+#csv_data("data_gen/annual.csv")
 
 
 

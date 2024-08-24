@@ -83,7 +83,7 @@ $
 === Averaged performance of the Backward pass of the CaNN: 
 
 - Need to list CPU and GPU spec
-  - OS: Linux pop-os 6.6.10-76060610-generic
+  - OS: Linux fedora 6.10.5-200.fc40.x86_64
   - CPU: AMD Ryzen 5 5600G
   - GPU: Radeon 6600
 
