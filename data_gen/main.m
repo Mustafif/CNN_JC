@@ -17,7 +17,7 @@ lambda = 0.5;
 path_days = 50;
 
 parfor i = 1:length(maturities)
-    [sig, V] = datagen(maturities(i), r, S0, N, M, h0, alpha, beta, omega, gamma, lambda, path_days);
-    data = table(V, sig, 'VariableNames', {'Option Price', 'Implied Volatility'});
+    [sig, V, S] = datagen(maturities(i), r, S0, N, M, h0, alpha, beta, omega, gamma, lambda, path_days);
+    data = table(V, sig, S', 'VariableNames', {'V', 'Sigma', 'S'});
     writetable(data, filenames{i});
 end

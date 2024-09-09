@@ -121,7 +121,7 @@ parameters for both the Option and HN-GARCH.
 
 == Generated Data
 
-#let csv_data(path) = align(center)[#table(columns: 2, fill: (rgb("EAF2F5"), none), ..csv(path).flatten())]
+#let csv_data(path) = align(center)[#table(columns: 3, fill: (rgb("EAF2F5"), none), ..csv(path).flatten())]
 
 === Week
 

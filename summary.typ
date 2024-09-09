@@ -83,7 +83,7 @@ $
 === Averaged performance of the Backward pass of the CaNN: 
 
 - Need to list CPU and GPU spec
-  - OS: Linux fedora 6.10.5-200.fc40.x86_64
+  - OS: Linux fedora 6.10.7-200.fc40.x86_64
   - CPU: AMD Ryzen 5 5600G
   - GPU: Radeon 6600
 
@@ -109,7 +109,7 @@ The design will make use of a backward pass artificial neural network, where we 
   #stack(
     dir: ttb,
     spacing: 1em,
-    align(center)[Market Data ($S, K, S_0, r, tau$, sigma | $R_t$)],
+    align(center)[Market Data ($S, K, S_0, r, tau, sigma $| $R_t$)],
     arrow,
     align(center)[Joint Calibration Neural Network],
     arrow,
@@ -253,13 +253,15 @@ The architecture currently will follow simarly to the paper, as the following:
   ),
   "Hidden Layers", $4$, 
   [
-    Neurons(each layer)\
+    Neurons(each layer except Output)\
     Activation\
     Dropout rate\
     Batch-normalization\
     Initialization\
     Optimizer\
     Batch size\
+    Output Layer Activation \ 
+    Output Layer Neurons
   ], 
   [
     $200$\
@@ -268,7 +270,9 @@ The architecture currently will follow simarly to the paper, as the following:
     No\
     Glorot_uniform\
     Adam\
-    $1024$
+    $1024$\
+    SoftPlus (to ensure all GARCH params are positive)
+    5 (for each GARCH param)
   ]
 )
 ]
