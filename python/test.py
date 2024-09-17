@@ -1,64 +1,58 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-import keras
 
-def load_and_preprocess_data(file_path):
-    try:
-        df = pd.read_csv(file_path)
-        print(f"Loaded data shape: {df.shape}")
-        print(df.head())
+def load_data(file_path):
+    df = pd.read_csv(file_path)
+    print(f"Loaded data shape: {df.shape}")
+    print(df.head())
+    return df
 
-        if df.empty:
-            raise ValueError("The CSV file is empty.")
+def calculate_returns(prices):
+    return np.log(prices[1:] / prices[:-1])
 
-        # Calculate returns
-        df['returns'] = df['S'].pct_change()
+# Custom HN-GARCH negative log-likelihood loss function
+@tf.function
+def hn_garch_loss(y_true, y_pred):
+    returns = y_true[:, 0]  # Assuming the first column of y_true contains returns
+    omega, alpha, beta, gamma, lambda_ = tf.unstack(y_pred, axis=-1)
+    
+    T = tf.shape(returns)[0]
+    h = tf.TensorArray(tf.float32, size=T)
+    h = h.write(0, omega / (1 - alpha - beta))
+    
+    log_likelihood = tf.constant(0.0, dtype=tf.float32)
+    
+    for t in range(1, T):
+        h_t = omega + alpha * tf.square(returns[t-1] - gamma * tf.sqrt(h.read(t-1))) + beta * h.read(t-1)
+        h = h.write(t, h_t)
+        log_likelihood += -0.5 * (tf.math.log(2 * np.pi) + tf.math.log(h_t) + tf.square(returns[t]) / h_t)
+    
+    return -log_likelihood  # Return negative log-likelihood as we want to minimize the loss
 
-        # Drop the first row (NaN return) and reset index
-        df = df.dropna().reset_index(drop=True)
-
-        print(f"Preprocessed data shape: {df.shape}")
-        print(df.head())
-
-        return df
-    except Exception as e:
-        print(f"Error in load_and_preprocess_data: {str(e)}")
-        raise
-
-def create_features(df, lookback=5):
-    try:
-        features = []
-        for i in range(lookback, len(df)):
-            feature = df.iloc[i-lookback:i][['V', 'Sigma', 'S', 'returns']].values.flatten()
-            features.append(feature)
-
-        features = np.array(features)
-        print(f"Created features shape: {features.shape}")
-
-        if features.size == 0:
-            raise ValueError("No features were created. Check if the dataframe has enough rows.")
-
-        return features
-    except Exception as e:
-        print(f"Error in create_features: {str(e)}")
-        raise
-
-def create_and_train_model(X, y, epochs=100, batch_size=32):
+def create_model(input_shape):
     model = keras.Sequential([
-        keras.layers.Dense(64, activation='relu', input_shape=(X.shape[1],)),
+        keras.layers.Dense(64, activation='relu', input_shape=(input_shape,)),
         keras.layers.Dense(32, activation='relu'),
         keras.layers.Dense(16, activation='relu'),
-        keras.layers.Dense(1)  # Predicting a single value (next return)
+        keras.layers.Dense(5, activation='softplus')  # Ensure positive outputs for GARCH parameters
     ])
+    model.compile(optimizer='adam', loss=hn_garch_loss)
+    return model
 
-    model.compile(optimizer='adam', loss='mse')
+def prepare_data(returns, lookback=20):
+    X, y = [], []
+    for i in range(lookback, len(returns)):
+        X.append(returns[i-lookback:i])
+        y.append(returns[i])
+    return np.array(X), np.array(y).reshape(-1, 1)
+
+def train_model(model, X, y, epochs=100, batch_size=32):
     history = model.fit(X, y, epochs=epochs, batch_size=batch_size, validation_split=0.2, verbose=1)
-
-    return model, history
+    return history
 
 def plot_training_history(history):
     plt.figure(figsize=(10, 6))
@@ -70,67 +64,34 @@ def plot_training_history(history):
     plt.legend()
     plt.show()
 
-def plot_predictions(df, predictions):
-    plt.figure(figsize=(12, 6))
-    plt.plot(df['S'], label='Actual Stock Price')
-    plt.plot(df['S'].iloc[5:] * (1 + predictions), label='Predicted Stock Price')
-    plt.title('Actual vs Predicted Stock Prices')
-    plt.xlabel('Time')
-    plt.ylabel('Stock Price')
-    plt.legend()
-    plt.show()
-
 def main():
     try:
-        # Load and preprocess data
-        df = load_and_preprocess_data('../data_gen/week.csv')
-
-        # Create features and targets
-        X = create_features(df)
-        y = df['returns'].iloc[5:].values
-
-        print(f"X shape: {X.shape}")
-        print(f"y shape: {y.shape}")
-
-        # Ensure y is 2D
-        if y.ndim == 1:
-            y = y.reshape(-1, 1)
-
-        # Scale features and targets
-        scaler_X = MinMaxScaler()
-        scaler_y = MinMaxScaler()
-        X_scaled = scaler_X.fit_transform(X)
-        y_scaled = scaler_y.fit_transform(y)
-
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
-
+        # Load data
+        df = load_data('week.csv')
+        
+        # Calculate returns
+        returns = calculate_returns(df['S'].values)
+        
+        # Prepare data
+        X, y = prepare_data(returns)
+        
         # Create and train the model
-        model, history = create_and_train_model(X_train, y_train)
-
-        # Evaluate the model
-        mse = model.evaluate(X_test, y_test)
-        print(f"Mean Squared Error on test set: {mse}")
-
+        model = create_model(X.shape[1])
+        history = train_model(model, X, y)
+        
         # Plot training history
         plot_training_history(history)
-
-        # Make predictions on the entire dataset
-        predictions_scaled = model.predict(X_scaled)
-        predictions = scaler_y.inverse_transform(predictions_scaled).flatten()
-
-        # Plot actual vs predicted stock prices
-        plot_predictions(df, predictions)
-
-        # Print some sample predictions
-        print("\nSample Predictions (Return):")
-        for i in range(5):
-            actual = df['returns'].iloc[i+5]
-            predicted = predictions[i]
-            print(f"Actual: {actual:.4f}, Predicted: {predicted:.4f}")
-
+        
+        # Predict HN-GARCH parameters
+        predicted_params = model.predict(X[-1].reshape(1, -1))[0]
+        
+        print("Estimated HN-GARCH parameters:")
+        param_names = ['omega', 'alpha', 'beta', 'gamma', 'lambda']
+        for name, value in zip(param_names, predicted_params):
+            print(f"{name}: {value:.6f}")
+        
     except Exception as e:
-        print(f"An error occurred in main: {str(e)}")
+        print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()

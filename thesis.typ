@@ -151,3 +151,55 @@ $
 R_t = r - 1/2 h_t + z^*_t sqrt(h_t)\
 h_t = omega + beta h_(t-1) + alpha(sqrt(h_(t-1))(z^*_(t-1)-lambda))
 $
+
+#pagebreak()
+
+== Log Likelihoods 
+
+=== Return Log Likelihood 
+
+The log likelihood of the return process is calculated under the $bb(P)$ measure. 
+
+Let $Y_1$ represent the returns log likelihood and $N$ be the number of days in the returns sample, we can then compute it as: 
+
+$
+Y_1 = -1/2 sum^N_(i=1) { ln(h_i) + (R_i - mu_i + gamma)^2 / h_i }
+$ <LLR>
+
+From the GARCH Process we can deduce the following:  
+
+$
+R_t &= mu_t - gamma + sqrt(h_t)z_t \
+sqrt(h_t)z_t &= R_t - mu_t + gamma
+$
+
+Substituting the above into @LLR we get the following:
+
+$
+Y_1 = -1/2 sum^N_(i=1) { ln(h_i) + z_i^2 } #h(2cm) z_i tilde D(0, 1)
+$<LLR_NEW>
+
+=== Options Log Likelihood
+
+The log likelihood of the options process is calculated under the $bb(Q)$ measure. 
+
+Assume 
+$ 
+underbrace(sigma_(i,t), "Imp vol. from market price") = underbrace(sigma_(i, t) (C_(i, t) (h_t (xi^*))), "Imp vol. from GARCH model") + epsilon_(i, t)
+$ where 
+$epsilon_(i, t) tilde N(0, sigma_epsilon^2)$
+
+
+Let $Y_2$ represent the options log likelihood and $M$ be the number of options, we can then compute it as:
+
+$
+Y_2 = -1/2 sum^M_(i=1) { 2ln(sigma_epsilon) + (overbrace(sigma_(i), "Imp vol. on market price") - overbrace(sigma_("imp", i), "Impl vol. from models"))^2 / sigma_epsilon^2 }
+$
+
+=== Joint Log Likelihood
+
+$
+Y_"joint" = (N+M)/(2N) Y_1 + (N+M)/(2M) Y_2
+$
+
+In our Calibration Artificial Neural Network, we will use $-Y_"joint"$ as our objective function to to solve for the parameters $theta = (omega, alpha, beta, gamma, lambda, sigma_epsilon)$, with the non-negativity constraint on the parameters in  $theta$. 
