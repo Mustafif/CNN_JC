@@ -5,7 +5,7 @@
   author: "Mustafif Khan",
   date: datetime.today(),
   abstract: [],
-  bibliography: [],
+  bibliography: bibliography("refs.bib"),
   figure-index: (enabled: true),
   table-index: (enabled: true),
   listing-index: (enabled: true)
