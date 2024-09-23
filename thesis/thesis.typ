@@ -1,15 +1,25 @@
 #import "@preview/ilm:1.2.1": *
+#import "styles.typ": *
+
+#let abstract = [
+  *Abstract Coming Soon!*
+]
 
 #show: ilm.with(
   title: [Joint Calibration Thesis],
   author: "Mustafif Khan",
   date: datetime.today(),
-  abstract: [],
+  abstract: abstract,
   bibliography: bibliography("refs.bib"),
   figure-index: (enabled: true),
   table-index: (enabled: true),
   listing-index: (enabled: true)
 )
+
+#pagebreak()
+
+#include "intro.typ"
+
 
 #pagebreak()
 
@@ -154,19 +164,19 @@ $
 
 #pagebreak()
 
-== Log Likelihoods 
+== Log Likelihoods
 
-=== Return Log Likelihood 
+=== Return Log Likelihood
 
-The log likelihood of the return process is calculated under the $bb(P)$ measure. 
+The log likelihood of the return process is calculated under the $bb(P)$ measure.
 
-Let $Y_1$ represent the returns log likelihood and $N$ be the number of days in the returns sample, we can then compute it as: 
+Let $Y_1$ represent the returns log likelihood, $h_i$ be the daily returns, and $N$ be the number of days in the returns sample, we can then compute it as:
 
 $
 Y_1 = -1/2 sum^N_(i=1) { ln(h_i) + (R_i - mu_i + gamma)^2 / h_i }
 $ <LLR>
 
-From the GARCH Process we can deduce the following:  
+From the GARCH Process, we can notice that $R_i - mu_i + gamma$ in the formula is equivalent to the following:
 
 $
 R_t &= mu_t - gamma + sqrt(h_t)z_t \
@@ -179,14 +189,22 @@ $
 Y_1 = -1/2 sum^N_(i=1) { ln(h_i) + z_i^2 } #h(2cm) z_i tilde D(0, 1)
 $<LLR_NEW>
 
+#note(
+[
+This derivation with the formula with @LLR_NEW, allows us to calculate the
+Log Likelihood agnostic towards whichever GARCH model we'd like to use, whether Heston-Nandi or
+Duan.
+]
+)
+
 === Options Log Likelihood
 
-The log likelihood of the options process is calculated under the $bb(Q)$ measure. 
+The log likelihood of the options process is calculated under the $bb(Q)$ measure.
 
-Assume 
-$ 
+Assume
+$
 underbrace(sigma_(i,t), "Imp vol. from market price") = underbrace(sigma_(i, t) (C_(i, t) (h_t (xi^*))), "Imp vol. from GARCH model") + epsilon_(i, t)
-$ where 
+$ where
 $epsilon_(i, t) tilde N(0, sigma_epsilon^2)$
 
 
@@ -202,4 +220,7 @@ $
 Y_"joint" = (N+M)/(2N) Y_1 + (N+M)/(2M) Y_2
 $
 
-In our Calibration Artificial Neural Network, we will use $-Y_"joint"$ as our objective function to to solve for the parameters $theta = (omega, alpha, beta, gamma, lambda, sigma_epsilon)$, with the non-negativity constraint on the parameters in  $theta$. 
+In our Calibration Artificial Neural Network, we will use $-Y_"joint"$ as our objective function to to solve for the parameters $theta = (omega, alpha, beta, gamma, lambda, sigma_epsilon)$, with the non-negativity constraint on the parameters in  $theta$.
+
+
+= Conclusion
