@@ -72,6 +72,35 @@ parameters.
 
 ])
 
+== American Options
+
+#definition(title: "American Option", [
+  An American option is a financial derivative that gives the holder of the contract to exercise the right, but not the obligation, to buy or sell an underlying asset at a specified price at any time before the expiration date. 
+])
+
+Let's discuss different types of American options, such as monthly and weekly contracts, and how their expiration typically works, focusing on U.S.-listed stock options.
+
+#note(
+  [
+    After the contract expiration date, the options contract no longer exists and the options holder can neither sell the contract to another trader nor exercise it.
+]
+)
+
+*Monthly*: 
+- The expiration date occurs on the third Friday of every month between the 15th and 21st day of the month. 
+- When the expiration date falls on a holiday, the expiration date is on the Thursday before the third Friday.
+
+*Weekly*: 
+- These options expire every Friday or the last trading day of the week.
+
+In our paper we will be taking a look at the SPDR S&P 500 ETF Trust (SPY) American Options, which is a popular ETF that tracks the S&P 500 Index.
+
+
+
+
+
+
+
 
 == Structure
 

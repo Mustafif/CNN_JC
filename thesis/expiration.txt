@@ -1,0 +1,13 @@
+https://www.moomoo.com/us/learn/detail-options-expiration-date-in-options-trading-117142-240437090#:~:text=For%20U.S,nor%20exercise%20it.
+
+For U.S. listed stock options, their expiration date is usually the third Friday of 
+the contract month. When a Friday lands on a holiday, then the expiration date is 
+Thursday of the same week. After the contract expiration date, the options contract no longer exists and the options holder can neither sell the contract to another trader nor exercise it.
+
+Monthly, 
+A monthly contract expiration occurs on the third Friday of every month between the 15th and 21st day of the month in the U.S.
+
+Weekly, 
+The option expiration date for this contract type takes place at the end of the trading week and it's referred to as weeklys
+These "weeklys" typically expire every Friday.
+

@@ -5,7 +5,7 @@
     fill: luma(240),
     radius: 4pt,
     [
-      #text(weight: "bold")[Definition: #title]
+      #text(weight: "bold")[#underline[Definition: #title]]
 
       #body
     ]
