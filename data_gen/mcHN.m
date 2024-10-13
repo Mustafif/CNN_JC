@@ -1,13 +1,16 @@
-function S = mcHN(M, N,S0, h0,Z, r, omega, alpha, beta, gamma, lambda)
-
+function [S, h0] = mcHN(M, N,S0, Z, r, omega, alpha, beta, gamma, lambda)
+dt = 1/252; 
 numPoint = N+1;
-ht = nan(numPoint, M);
-Xt = nan(numPoint, M);
-ht(1,:) = h0 * ones(1, M);
-Xt(1,:) = log(S0) * ones(1, M);
+S = zeros(N+1, M);
+ht = zeros(N+1, M);
+h0 = (omega + alpha)/(1-beta-alpha*gamma^2);
+ht(1, :) = h0;
+S(1, :) = S0;
 for i = 2:numPoint
     ht(i,:) = omega + alpha * (Z(i-1,:) - gamma * sqrt(ht(i-1,:))).^2 + beta * ht(i-1,:);
-    Xt(i,:) = Xt(i-1,:) + (r - 0.5 * ht(i,:)) + sqrt(ht(i,:)) .* Z(i,:);
+    Xt = r * dt + lambda * ht(i, :) + sqrt(ht(i, :)) * Z(i, :);
+
+    S(i, :) = S(i-1, :) * exp(Xt);
 end
-S = exp(Xt);
+
 end

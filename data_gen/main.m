@@ -1,5 +1,5 @@
-maturities = [5, 63, 126, 252]; % week, 3 months, 6 months and one year of trading days 
-filenames = {'week.csv', 'quarter.csv', 'half.csv', 'annual.csv'};
+maturities = [5,10, 21, 42, 63, 126]; % week, 3 months, 6 months and one year of trading days 
+%filenames = {'week.csv', 'quarter.csv', 'half.csv', 'annual.csv'};
 % 1. Initialize Option Parameters
 r = 0.05/252; % Risk-free rate
 S0 = 100; % Initial asset price
@@ -16,8 +16,8 @@ lambda = 0.5;
 
 path_days = 50;
 
-parfor i = 1:length(maturities)
-    [sig, V, S] = datagen(maturities(i), r, S0, N, M, h0, alpha, beta, omega, gamma, lambda, path_days);
-    data = table(V, sig, S', 'VariableNames', {'V', 'Sigma', 'S'});
-    writetable(data, filenames{i});
-end
+% parfor i = 1:length(maturities)
+%     [sig, V, S] = datagen(maturities(i), r, S0, N, M, h0, alpha, beta, omega, gamma, lambda, path_days);
+%     data = table(V, sig, S', 'VariableNames', {'V', 'Sigma', 'S'});
+%     writetable(data, filenames{i});
+% end

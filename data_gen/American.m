@@ -29,7 +29,7 @@ function [price,V]=American(nodes,P,q,r,T,S0,K,index)
 [~,N]=size(nodes);
 V(:,N) = max(index*(nodes(:,N)-K),0);% the payoff at maturity date
 % Backward induction
-for i = N-1:-1:1;
+for i = N-1:-1:1
     V(:,i) = max(max(index*(nodes(:,i)-K),0),exp(-r*T/N)*P(:,:,i)*V(:,i+1));
 end
-price = max(max(index*(S0-K),0),exp(-r*T/N)*q'*V(:,1));   
+price = max(max(index*(S0-K),0),exp(-r*T/N)*q'*V(:,1)); 

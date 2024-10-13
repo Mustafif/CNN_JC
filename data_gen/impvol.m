@@ -29,10 +29,10 @@ for i = 1:n  % each maturity
         a = 0;
         b = 1;
         sigma = (a+b)/2;
-        while abs(V0-V(j,i)) >tol & it < itmax
+        while abs(V0-V(j,i)) >tol && it < itmax
             Xnodes = nodes_Winer(T,N,z,r, sigma);
             nodes = S0.*exp(Xnodes);
-            V0 =American(nodes,P,q,r,T(i),S0,K(j,i),index(j,i));
+            V0 =American(nodes,P,q,r,T(i),S0,K(j,i),index);
             if V0>V
                 b = sigma;
             else

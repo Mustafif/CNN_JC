@@ -16,6 +16,8 @@
   listing-index: (enabled: true)
 )
 
+#set list(marker: [‣])
+
 #pagebreak()
 
 #include "intro.typ"
