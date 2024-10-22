@@ -1,4 +1,4 @@
-function GenDaysData(daynum)
+function GenDaysData(day_num)
 % N = monte carlo time points, we are considering 2 years 
 % which in trading days is 504 days 
 N = 504;
@@ -17,22 +17,23 @@ gamma = 100;
 lambda = 0.5;
 [S, h0] = mcHN(M, N, S_init, Z, r, omega, alpha, beta, gamma, lambda);
 
-S0 = S(end+(-5+daynum), :);
+S0 = S(end+(-5+day_num), :);
 T = [5, 10, 21, 42, 63, 126];
-K = linspace(0.8, 1.2, 9);
+T = T - (day_num - 1);
+m = linspace(0.8, 1.2, 9);
 T_len = length(T);
-K_len = length(K);
-V_cal = zeros(T_len, K_len);
-V_put = zeros(T_len, K_len);
+m_len = length(m);
+V_cal = zeros(T_len, m_len);
+V_put = zeros(T_len, m_len);
 
 call = 1;
 put = -1;
 
 for i = 1:T_len
-    for j = 1:K_len
-        strike = K(j) * S0;
-        [V_C, ~] = datagen2(T(i), r, S0, h0, strike, alpha, beta, omega, gamma, lambda, call);
-        [V_P, ~] = datagen2(T(i), r, S0, h0, strike, alpha, beta, omega, gamma, lambda, put);
+    for j = 1:m_len
+        K = m(j) * S0;
+        [V_C, ~] = datagen2(T(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, call);
+        [V_P, ~] = datagen2(T(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, put);
 
         V_cal(i, j) = V_C;
         V_put(i, j) = V_P;
@@ -41,33 +42,35 @@ end
 
 
 % Convert matrices into a table with labels
+V_cal = round(V_cal, 3);
+V_put = round(V_put, 3);
 
 % T_call: Call options table
-T_call = array2table(V_cal, 'VariableNames', strcat('Strike_', string(K)));
+T_call = array2table(V_cal, 'VariableNames', strcat('K_', string(m)));
 
 % Expand the Maturity vector to match the number of rows in the table
-T_call.Maturity = repmat(T(:), 1, 1);  % Convert T to a column vector, match rows
+T_call.T = repmat(T(:), 1, 1);  % Convert T to a column vector, match rows
 
 % Assign the OptionType as 'Call' for all rows
-T_call.OptionType = repmat({'Call'}, size(V_cal, 1), 1);
+T_call.Type = repmat({'Call'}, size(V_cal, 1), 1);
 
 % T_put: Put options table
-T_put = array2table(V_put, 'VariableNames', strcat('Strike_', string(K)));
+T_put = array2table(V_put, 'VariableNames', strcat('K_', string(m)));
 
 % Expand the Maturity vector for the put options as well
-T_put.Maturity = repmat(T(:), 1, 1);  % Convert T to a column vector, match rows
+T_put.T = repmat(T(:), 1, 1);  % Convert T to a column vector, match rows
 
 % Assign the OptionType as 'Put' for all rows
-T_put.OptionType = repmat({'Put'}, size(V_put, 1), 1);
+T_put.Type = repmat({'Put'}, size(V_put, 1), 1);
 
-% Combine the two tables (calls and puts)
+% Combine the two tables (calls and put
 T = [T_call; T_put];
 
 % Reorder columns so 'OptionType' comes first
-T = T(:, [{'OptionType', 'Maturity'}, strcat('Strike_', string(K))]);
+T = T(:, [{'Type', 'T'}, strcat('K_', string(m))]);
 
 % Save the table to CSV
-filename = sprintf("Day%d.csv", daynum);
+filename = sprintf("Day%d.csv", day_num);
 writetable(T, filename);
 end 
 
