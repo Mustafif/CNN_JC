@@ -50,8 +50,9 @@ itmax = 60;
 [q_Xt,P_Xt,~] = Prob_Xt(nodes_ht, qhd, nodes_Xt, S0,r, alpha,beta,c,w);
 nodes_S = exp(nodes_Xt);
 %  Price the American option
- V = American(nodes_S,P_Xt,q_Xt,r,T,S0,K,CorP);
+[V, ~] = American(nodes_S,P_Xt,q_Xt,r,T,S0,K,CorP);
  % compute the implied volatility of the American option
 [sig, V0, ~] = impvol(S0, K, T,r,V,CorP,N,m_x,gamma_x, tol, itmax);
 %
 
+end

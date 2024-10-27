@@ -4,6 +4,7 @@ numPoint = N+1;
 S = zeros(N+1, M);
 ht = zeros(N+1, M);
 h0 = (omega + alpha)/(1-beta-alpha*gamma^2);
+%h0 = (0.2^2)/N;
 ht(1, :) = h0;
 S(1, :) = S0;
 for i = 2:numPoint

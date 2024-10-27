@@ -15,7 +15,7 @@ beta = 0.8;
 omega = 1e-6;
 gamma = 100;
 lambda = 0.5;
-[S, h0] = mcHN(M, N, S_init, Z, r, omega, alpha, beta, gamma, lambda);
+[S, h0] = mcDuan(M, N, S_init, Z, r, omega, alpha, beta,lambda);
 
 S0 = S(end+(-5+day_num), :);
 T = [5, 10, 21, 42, 63, 126];
@@ -32,8 +32,8 @@ call = 1;
 parfor i = 1:T_len
     for j = 1:m_len
         K = m(j) * S0;
-        [V_C, ~] = datagen2(T(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, call);
-        [V_P, ~] = datagen2(T(i), r, K, h0, S0, alpha, beta, omega, gamma, lambda, call);
+        [V_C, ~] = datagen3(T(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, call);
+        [V_P, ~] = datagen3(T(i), r, K, h0, S0, alpha, beta, omega, gamma, lambda, call);
 
         V_cal(i, j) = V_C;
         V_put(i, j) = V_P;
@@ -70,7 +70,7 @@ T = [T_call; T_put];
 T = T(:, [{'Type', 'T'}, strcat('K_', string(m))]);
 
 % Save the table to CSV
-filename = sprintf("Day%d.csv", day_num);
+filename = sprintf("Duan_Day%d.csv", day_num);
 writetable(T, filename);
 end 
 
