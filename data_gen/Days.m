@@ -1,4 +1,4 @@
-function GenDaysData(day_num)
+function S0 = GenDaysData(day_num)
 % N = monte carlo time points, we are considering 2 years 
 % which in trading days is 504 days 
 N = 504;
@@ -40,6 +40,13 @@ parfor i = 1:T_len
     end
 end
 
+if day_num == 1
+    S = round(S, 4);
+    T_S = array2table(S);
+    %T_S.T = repmat(T(:), 1, 1);
+    writetable(T_S, "Historical.csv");
+end
+
 
 % Convert matrices into a table with labels
 V_cal = round(V_cal, 4);
@@ -72,8 +79,10 @@ T = T(:, [{'Type', 'T'}, strcat('K_', string(m))]);
 % Save the table to CSV
 filename = sprintf("Day%d.csv", day_num);
 writetable(T, filename);
-end 
+end
+
+S = zeros(5, 1);
 
 for i = 1:1:5
-    GenDaysData(i);
+   S(i) = GenDaysData(i);
 end
