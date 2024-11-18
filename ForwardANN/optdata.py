@@ -1,8 +1,11 @@
 import pandas as pd
 
 class OptionData:
-    def __init__(self, day_num):
-        self.filename = f"Day{day_num}.csv"
+    def __init__(self, day_num, opt_file=None):
+        if opt_file is None:
+            self.filename = f"Day{day_num}.csv"
+        else:
+            self.filename = opt_file
 
 
     def call(self):

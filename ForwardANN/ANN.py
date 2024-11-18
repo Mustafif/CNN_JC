@@ -6,9 +6,13 @@ import torch.nn as nn
 import torch.optim as optim
 from torch import tensor
 import matplotlib.pyplot as plt
+import time
+from datetime import datetime
+import pandas as pd
+import os
 
 class ParamFeatures:
-    def __init__(self, day_num, alpha=1.33e-6, beta=0.8, omega=1e-6, gamma=100, lambda_=0.5, r=0.03, corp=1):
+    def __init__(self, day_num,opt_file=None, alpha=1.33e-6, beta=0.8, omega=1e-6, gamma=100, lambda_=0.5, r=0.03, corp=1):
         # historical asset parameters
         self.historical = historical.historical()
         # market parameters
@@ -25,7 +29,7 @@ class ParamFeatures:
         self.lambda_: float = lambda_
 
         # Option Prices given maturity and Day Number
-        opt_data = OptionData(day_num=day_num)
+        opt_data = OptionData(day_num=day_num, opt_file=opt_file)
         self.call = opt_data.call()
         self.put = opt_data.put()
 
@@ -95,12 +99,16 @@ def train_and_predict(model, X, Y, num_epochs=1000, learning_rate=0.01):
         return predicted_prices
 
 
-def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01):
+def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01, opt_file=None):
     all_predicted = []
     all_true = []
 
     for trial in range(n_trials):
-        input_features = ParamFeatures(day_num=day_num, corp=corp)
+        # Create a folder for each trial
+        trial_folder = f"results/trial_{trial + 1}"
+        os.makedirs(trial_folder, exist_ok=True)
+
+        input_features = ParamFeatures(day_num=day_num, corp=corp, opt_file=opt_file)
         X = input_features.get_features().float()
 
         Y = np.array(input_features.put if corp == -1 else input_features.call)
@@ -112,12 +120,17 @@ def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01):
 
         predicted = []
         for i in range(Y.shape[0]):
-            predicted_prices = train_and_predict(model, X, Y[i])
-            predicted_prices = predicted_prices
+            predicted_prices = train_and_predict(model, X, Y[i], num_epochs=num_epochs, learning_rate=learning_rate)
+            predicted_prices = predicted_prices.numpy()
             predicted.append(predicted_prices)
 
         all_predicted.append(predicted)
-        all_true.append(Y)
+        all_true.append(Y.numpy())
+
+        # Save the predicted data to a CSV file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{trial_folder}/{'call' if corp == 1 else 'put'}{trial + 1}_Day{day_num}_{timestamp}.csv"
+        pd.DataFrame(predicted).to_csv(filename, index=False)
 
     # Flatten the lists for plotting
     all_predicted = np.array(all_predicted).flatten()
@@ -132,12 +145,23 @@ def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01):
     plt.title(title)
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"results/{"Call" if corp == 1 else "Put"}{n_trials}_Day{day_num}.png")
-
-
+    plt.savefig(f"results/Graphs/{"Call" if corp == 1 else "Put"}{n_trials}_Day{day_num}.png")
 
 if __name__ == '__main__':
-    run_trials(n_trials=25, day_num=3, corp=1)
+    run_trials(n_trials=1, day_num=5, corp=1, opt_file=None)
+
+    time.sleep(10)
+
+    run_trials(n_trials=1, day_num=5, corp=-1, opt_file=None)
+
+    time.sleep(10)
+
+    run_trials(n_trials=5, day_num=5, corp=1, opt_file=None)
+
+    time.sleep(10)
+
+    run_trials(n_trials=5, day_num=5, corp=-1, opt_file=None)
+
     # corp = -1
     # input = ParamFeatures(day_num=4, corp=corp)
     # X = input.get_features()
