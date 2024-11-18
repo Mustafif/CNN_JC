@@ -92,61 +92,85 @@ def train_and_predict(model, X, Y, num_epochs=1000, learning_rate=0.01):
     model.eval()
     with torch.no_grad():
         predicted_prices = model(X)
-        return predicted_prices.numpy()
+        return predicted_prices
+
+
+def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01):
+    all_predicted = []
+    all_true = []
+
+    for trial in range(n_trials):
+        input_features = ParamFeatures(day_num=day_num, corp=corp)
+        X = input_features.get_features().float()
+
+        Y = np.array(input_features.put if corp == -1 else input_features.call)
+        Y = torch.tensor(Y, dtype=torch.float64).float()
+
+        model = CaNNModel().float()
+        criterion = nn.HuberLoss()
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+        predicted = []
+        for i in range(Y.shape[0]):
+            predicted_prices = train_and_predict(model, X, Y[i])
+            predicted_prices = predicted_prices
+            predicted.append(predicted_prices)
+
+        all_predicted.append(predicted)
+        all_true.append(Y)
+
+    # Flatten the lists for plotting
+    all_predicted = np.array(all_predicted).flatten()
+    all_true = np.array(all_true).flatten()
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(all_true, all_predicted, color='blue', label='Predicted vs True')
+    plt.plot([all_true.min(), all_true.max()], [all_true.min(), all_true.max()], 'k--', lw=2, label='Ideal')
+    plt.xlabel('True Values')
+    plt.ylabel('Predicted Values')
+    title = f"Day Number: {day_num}, Trials: {n_trials} ({"Call" if corp == 1 else "Put"})"
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"results/{"Call" if corp == 1 else "Put"}{n_trials}_Day{day_num}.png")
+
 
 
 if __name__ == '__main__':
-    corp = -1
-    input = ParamFeatures(day_num=1, corp=corp)
-    X = input.get_features()
+    run_trials(n_trials=25, day_num=3, corp=1)
+    # corp = -1
+    # input = ParamFeatures(day_num=4, corp=corp)
+    # X = input.get_features()
 
-    Y = []
-    if corp == 1:
-        Y = np.array(input.call)
-    else:
-        Y = np.array(input.put)
-    Y = torch.tensor(Y, dtype=torch.float64)
-    Y = Y.float()
-    model = CaNNModel()
-    model = model.float()
-    criterion = nn.HuberLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    X = X.float()
+    # Y = []
+    # if corp == 1:
+    #     Y = np.array(input.call)
+    # else:
+    #     Y = np.array(input.put)
+    # Y = torch.tensor(Y, dtype=torch.float64)
+    # Y = Y.float()
+    # model = CaNNModel()
+    # model = model.float()
+    # criterion = nn.HuberLoss()
+    # optimizer = optim.Adam(model.parameters(), lr=0.01)
+    # X = X.float()
 
-    predicted = []
+    # predicted = []
 
-    for i in range(Y.shape[0]):
-        predicted_prices = train_and_predict(model, X, Y[i], num_epochs=1000, learning_rate=0.01)
-        np.set_printoptions(precision=4, suppress=True)
-        predicted_prices = np.array(predicted_prices)
-        predicted.append(predicted_prices)
-        print(f"Predicted prices for row {i+1}: {predicted_prices}")
+    # for i in range(Y.shape[0]):
+    #     predicted_prices = train_and_predict(model, X, Y[i], num_epochs=1000, learning_rate=0.01)
+    #     np.set_printoptions(precision=4, suppress=True)
+    #     predicted_prices = np.array(predicted_prices)
+    #     predicted.append(predicted_prices)
+    #     print(f"Predicted prices for row {i+1}: {predicted_prices}")
 
-    # num_epochs = 1000
-    # for epoch in range(num_epochs):
-    #     model.train()
-    #     optimizer.zero_grad()
-    #     output = model(X)
-    #     # handling put and call prices
-    #     loss = criterion(output, Y[0])
-    #     loss.backward()
-    #     optimizer.step()
-
-    #     if epoch % 100 == 0:
-    #         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
-
-    # model.eval()
-    # with torch.no_grad():
-    #     predicted_prices = model(X)
-    #     print(predicted_prices.numpy())  # Predicted option prices
-
-    plt.figure(figsize=(10, 6))
-    predicted = np.array(predicted)
-    plt.scatter(Y.flatten(), predicted.flatten(), color='blue', label='Predicted vs True')
-    plt.plot([Y.min(), Y.max()], [Y.min(), Y.max()], 'k--', lw=2, label='Ideal')
-    plt.xlabel('True Values')
-    plt.ylabel('Predicted Values')
-    plt.title('Predicted vs True Values')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # plt.figure(figsize=(10, 6))
+    # predicted = np.array(predicted)
+    # plt.scatter(Y.flatten(), predicted.flatten(), color='blue', label='Predicted vs True')
+    # plt.plot([Y.min(), Y.max()], [Y.min(), Y.max()], 'k--', lw=2, label='Ideal')
+    # plt.xlabel('True Values')
+    # plt.ylabel('Predicted Values')
+    # plt.title('Predicted vs True Values')
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
