@@ -148,45 +148,4 @@ def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01, opt
     plt.savefig(f"results/Graphs/{'Call' if corp == 1 else 'Put'}{n_trials}_Day{day_num}.png")
 
 if __name__ == '__main__':
-    run_trials(n_trials=25, day_num=1, corp=1, opt_file=None)
-
-    time.sleep(10)
-
     run_trials(n_trials=25, day_num=1, corp=-1, opt_file=None)
-
-    # corp = -1
-    # input = ParamFeatures(day_num=4, corp=corp)
-    # X = input.get_features()
-
-    # Y = []
-    # if corp == 1:
-    #     Y = np.array(input.call)
-    # else:
-    #     Y = np.array(input.put)
-    # Y = torch.tensor(Y, dtype=torch.float64)
-    # Y = Y.float()
-    # model = CaNNModel()
-    # model = model.float()
-    # criterion = nn.HuberLoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.01)
-    # X = X.float()
-
-    # predicted = []
-
-    # for i in range(Y.shape[0]):
-    #     predicted_prices = train_and_predict(model, X, Y[i], num_epochs=1000, learning_rate=0.01)
-    #     np.set_printoptions(precision=4, suppress=True)
-    #     predicted_prices = np.array(predicted_prices)
-    #     predicted.append(predicted_prices)
-    #     print(f"Predicted prices for row {i+1}: {predicted_prices}")
-
-    # plt.figure(figsize=(10, 6))
-    # predicted = np.array(predicted)
-    # plt.scatter(Y.flatten(), predicted.flatten(), color='blue', label='Predicted vs True')
-    # plt.plot([Y.min(), Y.max()], [Y.min(), Y.max()], 'k--', lw=2, label='Ideal')
-    # plt.xlabel('True Values')
-    # plt.ylabel('Predicted Values')
-    # plt.title('Predicted vs True Values')
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
