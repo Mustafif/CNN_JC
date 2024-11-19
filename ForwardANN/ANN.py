@@ -141,26 +141,18 @@ def run_trials(n_trials, day_num, corp, num_epochs=1000, learning_rate=0.01, opt
     plt.plot([all_true.min(), all_true.max()], [all_true.min(), all_true.max()], 'k--', lw=2, label='Ideal')
     plt.xlabel('True Values')
     plt.ylabel('Predicted Values')
-    title = f"Day Number: {day_num}, Trials: {n_trials} ({"Call" if corp == 1 else "Put"})"
+    title = f"Day Number: {day_num}, Trials: {n_trials} ({'Call' if corp == 1 else 'Put'})"
     plt.title(title)
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"results/Graphs/{"Call" if corp == 1 else "Put"}{n_trials}_Day{day_num}.png")
+    plt.savefig(f"results/Graphs/{'Call' if corp == 1 else 'Put'}{n_trials}_Day{day_num}.png")
 
 if __name__ == '__main__':
-    run_trials(n_trials=1, day_num=5, corp=1, opt_file=None)
+    run_trials(n_trials=25, day_num=1, corp=1, opt_file=None)
 
     time.sleep(10)
 
-    run_trials(n_trials=1, day_num=5, corp=-1, opt_file=None)
-
-    time.sleep(10)
-
-    run_trials(n_trials=5, day_num=5, corp=1, opt_file=None)
-
-    time.sleep(10)
-
-    run_trials(n_trials=5, day_num=5, corp=-1, opt_file=None)
+    run_trials(n_trials=25, day_num=1, corp=-1, opt_file=None)
 
     # corp = -1
     # input = ParamFeatures(day_num=4, corp=corp)
