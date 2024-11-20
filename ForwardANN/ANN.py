@@ -49,9 +49,13 @@ class CaNNModel(nn.Module):
         input_features = 10
         neurons = 200
         self.input_layer = nn.Linear(input_features, neurons)
+        self.bn1 = nn.BatchNorm1d(neurons)
         self.hl1 = nn.Linear(neurons, neurons)
+        self.bn2 = nn.BatchNorm1d(neurons)
         self.hl2 = nn.Linear(neurons, neurons)
+        self.bn3 = nn.BatchNorm1d(neurons)
         self.hl3 = nn.Linear(neurons, neurons)
+        self.bn4 = nn.BatchNorm1d(neurons)
         self.hl4 = nn.Linear(neurons, neurons)
         self.output_layer = nn.Linear(neurons, 1) # just need 1 price
 
@@ -144,9 +148,9 @@ def run(S0, T, K, call, put, corp, num_epochs=1000, learning_rate=0.01):
 
 if __name__ == '__main__':
     S0 = 114.7862
-    T = 21
-    K = 0.8 * S0
-    call = 23.3626
-    put = 0
-    corp = 1
+    T = 5
+    K = 0.85 * S0
+    call = 30.8094
+    put = 0.014
+    corp = -1
     run(S0, T, K, call, put, corp)
