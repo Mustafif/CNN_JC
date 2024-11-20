@@ -18,8 +18,8 @@ class ParamFeatures:
         # market parameters
         self.r: float = 0.03
         self.S0: float = self.historical[-5+(day_num-1)]
-        self.T = np.array([5, 10, 21, 42, 63, 126]) - (day_num - 1)
-        self.K= np.linspace(0.8, 1.2, 9)*self.S0
+        self.T = np.array([5, 10, 21, 42, 63, 126]) - (day_num - 1) # one number :)
+        self.K= np.linspace(0.8, 1.2, 9)*self.S0 # one number :)
         self.corp: int = corp
         # GARCH parameters
         self.alpha: float = alpha
@@ -50,7 +50,7 @@ class CaNNModel(nn.Module):
         self.hl2 = nn.Linear(neurons, neurons)
         self.hl3 = nn.Linear(neurons, neurons)
         self.hl4 = nn.Linear(neurons, neurons)
-        self.output_layer = nn.Linear(neurons, 9)
+        self.output_layer = nn.Linear(neurons, 9) # just need 1 price 
 
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)

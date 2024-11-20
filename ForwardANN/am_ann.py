@@ -21,7 +21,8 @@ y = []  # Labels (option prices)
 
 for price in stock_prices:
     feature = [price, K * price, T]  # current price, strike price, time to maturity
-    option_price = max(price - (K * price), 0)  # Call option payoff
+    # instead of price have S0, K*price = S_t and T
+    option_price = max(price - (K * price), 0)  # we want to be a func to calculate opt price 
     X.append(feature)
     y.append(option_price)
 
@@ -36,8 +37,9 @@ y_tensor = torch.FloatTensor(y).view(-1, 1)  # Reshape for PyTorch
 class OptionPricingModel(nn.Module):
     def __init__(self):
         super(OptionPricingModel, self).__init__()
-        self.fc1 = nn.Linear(3, 100)  # 3 input features, 10 hidden units
-        self.fc2 = nn.Linear(100, 100)  # 10 hidden units
+        # input we have option features, prices and model features to get ANN to learn to price itself 
+        self.fc1 = nn.Linear(3, 100)  # 3 input features, 100 hidden units
+        self.fc2 = nn.Linear(100, 100)  # 100 hidden units
         self.fc3 = nn.Linear(100, 1)   # 1 output (option price)
 
     def forward(self, x):
