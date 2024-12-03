@@ -1,4 +1,4 @@
-function S0 = GenDaysData(day_num, r, T, m, alpha, beta, omega, gamma, lambda)
+function dataset = GenDaysData(day_num, r, T, m, alpha, beta, omega, gamma, lambda)
 % market params: [r, T, m]
 % garch params: [alpha, beta, omega, gamma, lambda]
 
@@ -23,20 +23,35 @@ m_len = length(m);
 
 call = 1;
 % put = -1;
-dataset = zeros(11, (m_len * 2) + (T_len*2));
+% Pre-allocate the dataset with the correct size
+% Assuming 2 rows per maturity-moneyness pair (one for call, one for put)
+dataset = zeros(11, T_len * m_len * 2);
+
+% Initialize an index counter for the dataset
+idx = 1;
 
 for i = 1:T_len % each maturity 
     for j = 1:m_len % each moneyness
         K = m(j) * S0; % each strike
+        
+        % Generate call and put option values
         [V_C, ~] = datagen2(T(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, call);
         [V_P, ~] = datagen2(T(i), r, K, h0, S0, alpha, beta, omega, gamma, lambda, call);
+        
+        % Round values to 4 decimal places
+        V_C = round(V_C, 4);
+        V_P = round(V_P, 4);
 
-%         V_cal(i, j) = V_C;
-%         V_put(i, j) = V_P;
-        dataset(i, j) = [S0 K r T(i) 1 alpha beta omega gamma lambda V_C ]';
-        dataset(i+1, j+1) = [S0 K r T(i) -1 alpha beta omega gamma lambda V_P ]';
+        % Store the call data in the dataset
+        dataset(:, idx) = [S0; K; r; T(i); 1; alpha; beta; omega; gamma; lambda; V_C];
+        idx = idx + 1;
+
+        % Store the put data in the dataset
+        dataset(:, idx) = [S0; K; r; T(i); -1; alpha; beta; omega; gamma; lambda; V_P];
+        idx = idx + 1;
     end
 end
+
 
 % if day_num == 1
 %     S = round(S, 4);
@@ -47,8 +62,8 @@ end
 
 
 % Convert matrices into a table with labels
-V_cal = round(V_cal, 4);
-V_put = round(V_put, 4);
+% V_cal = round(V_cal, 4);
+% V_put = round(V_put, 4);
 
 % % T_call: Call options table
 % T_call = array2table(V_cal, 'VariableNames', strcat('K_', string(m)));
@@ -75,6 +90,4 @@ V_put = round(V_put, 4);
 % T = T(:, [{'Type', 'T'}, strcat('K_', string(m))]);
 % 
 % % Save the table to CSV
-% filename = sprintf("Day%d.csv", day_num);
-% writetable(T, filename);
 end

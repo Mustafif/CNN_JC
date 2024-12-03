@@ -11,6 +11,8 @@ from datetime import datetime
 import pandas as pd
 import os
 
+from dataset import dataloader
+
 class ParamFeatures:
     def __init__(self, S0, T, K, call, put, opt_file=None, alpha=1.33e-6, beta=0.8, omega=1e-6, gamma=100, lambda_=0.5, r=0.03, corp=1):
         # historical asset parameters
@@ -49,13 +51,9 @@ class CaNNModel(nn.Module):
         input_features = 10
         neurons = 200
         self.input_layer = nn.Linear(input_features, neurons)
-        self.bn1 = nn.BatchNorm1d(neurons)
         self.hl1 = nn.Linear(neurons, neurons)
-        self.bn2 = nn.BatchNorm1d(neurons)
         self.hl2 = nn.Linear(neurons, neurons)
-        self.bn3 = nn.BatchNorm1d(neurons)
         self.hl3 = nn.Linear(neurons, neurons)
-        self.bn4 = nn.BatchNorm1d(neurons)
         self.hl4 = nn.Linear(neurons, neurons)
         self.output_layer = nn.Linear(neurons, 1) # just need 1 price
 
@@ -116,35 +114,9 @@ def run(S0, T, K, call, put, corp, num_epochs=1000, learning_rate=0.01):
         Y = torch.tensor(Y, dtype=torch.float64).view(1)
 
         model = CaNNModel().float()
-        criterion = nn.HuberLoss()
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         predicted_price = train_and_predict(model, X, Y, num_epochs=num_epochs, learning_rate=learning_rate)
         print(predicted_price)
-        #predicted_prices = predicted_prices.numpy()
-            #predicted.append(predicted_prices)
 
-        # all_predicted.append(predicted)
-        # all_true.append(Y.numpy())
-
-        # Save the predicted data to a CSV file
-        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # filename = f"{trial_folder}/{'call' if corp == 1 else 'put'}{trial + 1}_Day{day_num}_{timestamp}.csv"
-        # pd.DataFrame(predicted).to_csv(filename, index=False)
-
-    # Flatten the lists for plotting
-    # all_predicted = np.array(all_predicted).flatten()
-    # all_true = np.array(all_true).flatten()
-
-    # plt.figure(figsize=(10, 6))
-    # plt.scatter(all_true, all_predicted, color='blue', label='Predicted vs True')
-    # plt.plot([all_true.min(), all_true.max()], [all_true.min(), all_true.max()], 'k--', lw=2, label='Ideal')
-    # plt.xlabel('True Values')
-    # plt.ylabel('Predicted Values')
-    # title = f"Day Number: {day_num}, Trials: {n_trials} ({'Call' if corp == 1 else 'Put'})"
-    # plt.title(title)
-    # plt.legend()
-    # plt.grid(True)
-    # plt.savefig(f"results/Graphs/{'Call' if corp == 1 else 'Put'}{n_trials}_Day{day_num}.png")
 
 if __name__ == '__main__':
     S0 = 114.7862
