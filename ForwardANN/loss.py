@@ -1,60 +1,44 @@
 import numpy as np
+import pandas as pd
 
 def calculate_loss(data_file):
     """
-    Calculate the mean absolute error (MAE) between predictions and targets.
+    Calculate various performance metrics between predictions and targets.
 
     Parameters:
-    data_file (str): Path to the text file containing predictions and targets
+    data_file (str): Path to the CSV file containing predictions and targets.
 
     Returns:
-    float: Average loss (mean absolute error)
-    dict: Detailed loss information
+    dict: A dictionary containing detailed performance metrics.
     """
-    # Read the data from the file
-    predictions = []
-    targets = []
+    # Load the CSV file
+    data = pd.read_csv(data_file)
+    # Extract predictions and targets as numpy arrays
+    predictions = data['predictions'].to_numpy()
+    targets = data['targets'].to_numpy()
 
-    with open(data_file, 'r') as file:
-        # Skip the header
-        next(file)
+    # Calculate various metrics
+    absolute_errors = np.abs(predictions - targets)  # Absolute errors
+    squared_errors = (predictions - targets) ** 2   # Squared errors
 
-        for line in file:
-            # Remove brackets and split
-            pred_str, target_str = line.strip().split('],[')
+    mse = np.mean(squared_errors)  # Mean Squared Error
+    mae = np.mean(absolute_errors)  # Mean Absolute Error
 
-            # Convert to float and remove any remaining brackets
-            pred = float(pred_str.strip('[]'))
-            target = float(target_str.strip('[]'))
+    rmse = np.sqrt(np.mean((predictions - targets) ** 2))
 
-            predictions.append(pred)
-            targets.append(target)
-
-    # Convert to numpy arrays for easier calculation
-    predictions = np.array(predictions)
-    targets = np.array(targets)
-
-    # Calculate absolute error
-    absolute_errors = np.abs(predictions - targets)
-
-    # Calculate average loss (mean absolute error)
-    mean_loss = np.mean(absolute_errors)
+    # R^2 score
+    r2 = 1 - (np.sum(squared_errors) / np.sum((targets - np.mean(targets)) ** 2))
 
     # Prepare detailed loss information
     loss_info = {
         'total_samples': len(predictions),
-        'mean_loss': mean_loss,
-        'min_loss': np.min(absolute_errors),
-        'max_loss': np.max(absolute_errors),
-        'std_loss': np.std(absolute_errors)
+        'MSE': mse,
+        'MAE': mae,
+        'RMSE': rmse,
+        'R^2': r2,
+        'min_error': np.min(absolute_errors),
+        'max_error': np.max(absolute_errors),
+        'std_error': np.std(absolute_errors)
     }
 
-    return mean_loss, loss_info
-
-# Example usage
-if __name__ == '__main__':
-    mean_loss, loss_details = calculate_loss('test_results.csv')
-    print(f"Mean Absolute Error: {mean_loss}")
-    print("Loss Details:")
-    for key, value in loss_details.items():
-        print(f"{key}: {value}")
+    return loss_info

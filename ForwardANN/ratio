@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+def calculate_dataset_split(dataset_size_per_day=162, training_days=None, test_split_ratio=0.3):
+    """
+    Calculate dataset split for training and testing.
+    
+    Parameters:
+    - dataset_size_per_day: Number of data points per day (default 162)
+    - training_days: Number of days for training (to be input by user)
+    - test_split_ratio: Ratio of test data (default 0.3 or 30%)
+    
+    Returns:
+    - Dictionary with training and testing details
+    """
+    if training_days is None:
+        while True:
+            try:
+                training_days = int(input("Enter the number of days for training: "))
+                if training_days <= 0:
+                    print("Please enter a positive number of days.")
+                    continue
+                break
+            except ValueError:
+                print("Please enter a valid integer.")
+    
+    # Calculate total dataset size
+    total_dataset_size = dataset_size_per_day * training_days
+    
+    # Calculate test dataset size
+    test_days = max(1, round(training_days * test_split_ratio / (1 - test_split_ratio)))
+    test_dataset_size = dataset_size_per_day * test_days
+    
+    return {
+        "training_days": training_days,
+        "test_days": test_days,
+        "total_training_dataset_size": total_dataset_size,
+        "total_test_dataset_size": test_dataset_size,
+        "training_percentage": round((1 - test_split_ratio) * 100, 2),
+        "test_percentage": round(test_split_ratio * 100, 2)
+    }
+
+def main():
+    print("Dataset Split Calculator")
+    print("----------------------")
+    
+    # Option to use default or custom dataset size
+    while True:
+        use_default = input("Use default dataset size of 162 per day? (y/n): ").lower()
+        if use_default in ['y', 'n']:
+            break
+        print("Please enter 'y' or 'n'.")
+    
+    if use_default == 'n':
+        while True:
+            try:
+                dataset_size_per_day = int(input("Enter the number of data points per day: "))
+                if dataset_size_per_day <= 0:
+                    print("Please enter a positive number.")
+                    continue
+                break
+            except ValueError:
+                print("Please enter a valid integer.")
+    else:
+        dataset_size_per_day = 162
+    
+    # Get split results
+    split_results = calculate_dataset_split(
+        dataset_size_per_day=dataset_size_per_day
+    )
+    
+    # Print results
+    print("\nDataset Split Results:")
+    print(f"Training Days: {split_results['training_days']}")
+    print(f"Test Days: {split_results['test_days']}")
+    print(f"Total Training Dataset Size: {split_results['total_training_dataset_size']}")
+    print(f"Total Test Dataset Size: {split_results['total_test_dataset_size']}")
+    print(f"Training Percentage: {split_results['training_percentage']}%")
+    print(f"Test Percentage: {split_results['test_percentage']}%")
+
+if __name__ == "__main__":
+    main()
