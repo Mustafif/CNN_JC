@@ -17,7 +17,7 @@ dataset = arrayfun(@(day) GenDaysData(max_day, day, r, T, m, alpha, beta, omega,
 dataset = cell2mat(dataset);
 
 % Prepare headers and save dataset
-headers = {'S0', 'K', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'V'}';
+headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'V'}';
 filename = "train_dataset.csv";
 
 % Combine headers with data and write to CSV

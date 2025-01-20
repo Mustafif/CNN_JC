@@ -58,11 +58,11 @@ function dataset = GenDaysData(max_day, day_num, r, T, m, alpha, beta, omega, ga
             V_P = round(V_P, 4);
 
             % Store call option data
-            dataset(:, idx) = [S0; K; r; t(i); 1; alpha; beta; omega; gamma; lambda; V_C];
+            dataset(:, idx) = [S0; K/S0; r; t(i); 1; alpha; beta; omega; gamma; lambda; V_C];
             idx = idx + 1;
 
             % Store put option data
-            dataset(:, idx) = [S0; K; r; t(i); -1; alpha; beta; omega; gamma; lambda; V_P];
+            dataset(:, idx) = [S0; K/S0; r; t(i); -1; alpha; beta; omega; gamma; lambda; V_P];
             idx = idx + 1;
         end
     end

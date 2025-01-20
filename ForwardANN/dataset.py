@@ -13,7 +13,7 @@ class OptionDataset(Dataset):
         # Extract features (X) and target (Y)
         X = torch.tensor([
             self.data["S0"][idx],
-            self.data["K"][idx],
+            self.data["m"][idx],
             self.data["r"][idx],
             self.data["T"][idx],
             self.data["corp"][idx],
@@ -30,7 +30,11 @@ class OptionDataset(Dataset):
 def dataset_file(filename):
     return pd.read_csv(filename)
 
-data_train = dataset_file('train_dataset.csv')
-data_test = dataset_file('test_dataset.csv')
+def cleandataset(data):
+    # Drops rows where "V" is < 0.5
+    return data[data['V'] > 0.5].reset_index(drop=True)
+
+data_train = cleandataset(dataset_file('train_dataset.csv'))
+data_test = cleandataset(dataset_file('test_dataset.csv'))
 dataset_train = OptionDataset(data_train)
 dataset_test = OptionDataset(data_test)

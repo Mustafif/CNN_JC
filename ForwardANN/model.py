@@ -14,7 +14,6 @@ class CaNNModel(nn.Module):
         self.hl3 = nn.Linear(neurons, neurons)
         self.hl4 = nn.Linear(neurons, neurons)
         self.hl5 = nn.Linear(neurons, neurons)
-        # self.hl6 = nn.Linear(neurons, neurons)
         self.output_layer = nn.Linear(neurons, 1) # just need 1 price
 
         self.dropout1 = nn.Dropout(dropout_rate)
@@ -22,7 +21,6 @@ class CaNNModel(nn.Module):
         self.dropout3 = nn.Dropout(dropout_rate)
         self.dropout4 = nn.Dropout(dropout_rate)
         self.dropout5 = nn.Dropout(dropout_rate)
-        # self.dropout6 = nn.Dropout(dropout_rate)
 
 
     def forward(self, x):
@@ -37,8 +35,6 @@ class CaNNModel(nn.Module):
         x = self.dropout4(x)
         x = activation(self.hl5(x))
         x = self.dropout5(x)
-        # x = activation(self.hl6(x))
-        # x = self.dropout6(x)
         x = torch.nn.functional.softplus(self.output_layer(x))
         return x
 
@@ -115,7 +111,7 @@ class CaNNModel(nn.Module):
 # import torch.nn as nn
 
 # class CaNNModel(nn.Module):
-#     def __init__(self, dropout_rate=0.3):
+#     def __init__(self, dropout_rate=0.0):
 #         super(CaNNModel, self).__init__()
 #         input_features = 10
 #         neurons = 250
@@ -148,14 +144,14 @@ class CaNNModel(nn.Module):
 #         self.dropout6 = nn.Dropout(dropout_rate)
 
 #         # Weight initialization
-#     #     self.reset_parameters()
+#         self.reset_parameters()
 
-#     # def reset_parameters(self):
-#     #     # Xavier/Glorot initialization for better weight initialization
-#     #     for layer in [self.input_layer, self.hl1, self.hl2, self.hl3,
-#     #                   self.hl4, self.hl5, self.hl6, self.output_layer]:
-#     #         nn.init.xavier_uniform_(layer.weight)
-#     #         nn.init.zeros_(layer.bias)
+#     def reset_parameters(self):
+#         # Xavier/Glorot initialization for better weight initialization
+#         for layer in [self.input_layer, self.hl1, self.hl2, self.hl3,
+#                       self.hl4, self.hl5, self.hl6, self.output_layer]:
+#             nn.init.xavier_normal_(layer.weight)
+#             nn.init.zeros_(layer.bias)
 
 #     def forward(self, x):
 #         # Input layer with normalization and activation

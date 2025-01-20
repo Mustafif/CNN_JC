@@ -39,7 +39,7 @@ def objective(trial):
 
     # Model setup
     model = CaNNModel().to(device)
-    criterion = nn.HuberLoss()
+    criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Training
