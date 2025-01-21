@@ -1,42 +1,83 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-activation = torch.relu
-
-class CaNNModel(nn.Module):
-    def __init__(self, dropout_rate=0.0):
-        super(CaNNModel, self).__init__()
-        input_features = 10
-        neurons = 250
-        self.input_layer = nn.Linear(input_features, neurons)
-        self.hl1 = nn.Linear(neurons, neurons)
-        self.hl2 = nn.Linear(neurons, neurons)
-        self.hl3 = nn.Linear(neurons, neurons)
-        self.hl4 = nn.Linear(neurons, neurons)
-        self.hl5 = nn.Linear(neurons, neurons)
-        self.output_layer = nn.Linear(neurons, 1) # just need 1 price
-
-        self.dropout1 = nn.Dropout(dropout_rate)
-        self.dropout2 = nn.Dropout(dropout_rate)
-        self.dropout3 = nn.Dropout(dropout_rate)
-        self.dropout4 = nn.Dropout(dropout_rate)
-        self.dropout5 = nn.Dropout(dropout_rate)
-
+class ResidualBlock(nn.Module):
+    def __init__(self, channels, dropout_rate):
+        super(ResidualBlock, self).__init__()
+        self.bn1 = nn.BatchNorm1d(channels)
+        self.linear1 = nn.Linear(channels, channels)
+        self.bn2 = nn.BatchNorm1d(channels)
+        self.linear2 = nn.Linear(channels, channels)
+        self.dropout = nn.Dropout(dropout_rate)
 
     def forward(self, x):
-        x = activation(self.input_layer(x))
-        x = activation(self.hl1(x))
-        x = self.dropout1(x)
-        x = activation(self.hl2(x))
-        x = self.dropout2(x)
-        x = activation(self.hl3(x))
-        x = self.dropout3(x)
-        x = activation(self.hl4(x))
-        x = self.dropout4(x)
-        x = activation(self.hl5(x))
-        x = self.dropout5(x)
-        x = torch.nn.functional.softplus(self.output_layer(x))
+        identity = x
+
+        # First transformation
+        out = self.bn1(x)
+        out = F.relu(out)
+        out = self.linear1(out)
+        out = self.dropout(out)  # Add dropout after first linear
+
+        # Second transformation
+        out = self.bn2(out)
+        out = F.relu(out)
+        out = self.linear2(out)
+        out = self.dropout(out)  # Add dropout after second linear
+
+        # Scaled residual connection
+        return 0.1 * out + identity  # Scale the residual to improve stability
+
+class CaNNModel(nn.Module):
+    def __init__(self, dropout_rate=0.3):
+        super(CaNNModel, self).__init__()
+        input_features = 10
+        neurons = 200  # Reduced capacity
+        # Input layer
+        self.input_layer = nn.Linear(input_features, neurons)
+        self.input_bn = nn.BatchNorm1d(neurons)
+
+        # Residual blocks
+        self.res1 = ResidualBlock(neurons, dropout_rate)
+        self.res2 = ResidualBlock(neurons, dropout_rate)
+        # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+
+        # Output layer
+        self.output_bn = nn.BatchNorm1d(neurons)
+        self.output_layer = nn.Linear(neurons, 1)
+
+        # Initialize weights
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        # Input processing
+        x = self.input_layer(x)
+        x = self.input_bn(x)
+        x = F.relu(x)
+
+        # Residual blocks
+        x = self.res1(x)
+        x = self.res2(x)
+        # x = self.res3(x)  # New residual block
+
+        # Output processing
+        x = self.output_bn(x)
+        x = F.relu(x)
+        x = F.softplus(self.output_layer(x))
+
         return x
+
 
 
 # import torch

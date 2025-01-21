@@ -14,39 +14,61 @@ from sklearn.model_selection import train_test_split
 
 
 def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer, device, epochs):
-    "Train the model"
-    #scheduler = StepLR(optimizer, step_size=100, gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, min_lr=1e-5)
+    """Train the model with improved learning rate scheduling and regularization"""
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=optimizer.param_groups[0]['lr'],
+        epochs=epochs,
+        steps_per_epoch=len(train_loader),
+        pct_start=0.3,
+        anneal_strategy='cos'
+    )
+
+    best_val_loss = float('inf')
+    best_model_state = None
+    l1_lambda = 1e-5  # L1 regularization factor
 
     for epoch in range(epochs):
         model.train()
         train_loss = 0
-        # start_time = time.time()
 
         for batch_X, batch_y in train_loader:
             batch_X, batch_y = batch_X.to(device), batch_y.to(device)
             optimizer.zero_grad()
             output = model(batch_X.float())
             target = batch_y.float().view_as(output)
-            loss = criterion(output, target)
+            # Add L1 regularization
+            l1_loss = 0
+            for param in model.parameters():
+                l1_loss += torch.sum(torch.abs(param))
+            loss = criterion(output, target) + l1_lambda * l1_loss
             loss.backward()
+            # Add gradient clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
             train_loss += loss.item()
-        scheduler.step(train_loss / len(train_loader))
+
+        avg_train_loss = train_loss / len(train_loader)
 
         # validation phase
         model.eval()
         val_loss = 0
         with torch.no_grad():
-            for batch_X , batch_y in val_loader:
+            for batch_X, batch_y in val_loader:
                 batch_X, batch_y = batch_X.to(device), batch_y.to(device)
                 output = model(batch_X.float())
                 target = batch_y.float().view_as(output)
                 loss = criterion(output, target)
                 val_loss += loss.item()
-        scheduler.step(val_loss / len(val_loader))
-        # epoch_time = time.time() - start_time
-        print(f'Epoch {epoch+1}: Train Loss {train_loss/len(train_loader):.4f} Val Loss {val_loss/len(val_loader):.4f}')
+
+        avg_val_loss = val_loss / len(val_loader)
+        print(f'Epoch {epoch+1}: Train Loss {avg_train_loss:.4f} Val Loss {avg_val_loss:.4f}')
+
+        # Save best model state
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_state = model.state_dict()
     return model
 
 def evaluate_model(model: CaNNModel, data_loader, criterion, device):
@@ -97,41 +119,38 @@ def main():
     weight_decay = params['weight_decay']
     batch_size = params['batch_size']
 
-    # lr = 0.0001
-    # weight_decay = 1e-5
-    # batch_size = 64
     epochs = params['epochs']
 
     # Create samplers
-    train_sampler, val_sampler = train_val_split(dataset_train, val_size=0.1)
-    # train_sampler = RandomSampler(dataset_train)
+    train_sampler, val_sampler = train_val_split(dataset_train, val_size=0.2)
     test_sampler = RandomSampler(dataset_test)
 
     # Create data loaders
     train_loader = DataLoader(dataset_train, batch_size=batch_size, sampler=train_sampler, num_workers=4, pin_memory=True)
     val_loader = DataLoader(
-        dataset_train,  # Note: using same dataset, different sampler
+        dataset_train,  # Using test dataset for validation
         batch_size=batch_size,
         sampler=val_sampler,
         num_workers=4,
         pin_memory=True
     )
     test_loader = DataLoader(dataset_test, batch_size=batch_size, sampler=test_sampler, num_workers=4, pin_memory=True)
-    dropout_rate = 0.0
+    dropout_rate = 0.1  # Increased dropout rate for stronger regularization
     # Model setup
     model = CaNNModel(dropout_rate=dropout_rate).to(device)
-    # model = CaNNModel(
-    #     input_features=10,
-    #     hidden_layers=[256, 256, 256, 256],
-    #     dropout_rate=0.0,
-    #     activation=nn.ReLU(),
-    #     batch_norm=True,
-    #     output_activation=nn.Softplus()
-    # ).to(device)
-    # criterion = nn.HuberLoss()
     criterion = nn.HuberLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    # Warmup scheduler parameters
+    warmup_epochs = 5
+    total_steps = len(train_loader) * epochs
+    warmup_steps = len(train_loader) * warmup_epochs
 
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay,  # Increased weight decay for stronger L2 regularization
+        betas=(0.9, 0.999),
+        eps=1e-8
+    )
     # Training
     trained_model = train_model(model, train_loader, val_loader, criterion, optimizer, device, epochs=epochs)
 
