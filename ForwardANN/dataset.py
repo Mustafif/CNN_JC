@@ -13,8 +13,8 @@ class OptionDataset(Dataset):
         # Initialize or use existing target scaler
         if is_train:
             self.target_scaler = MinMaxScaler(feature_range=(0, 1))
-            # Fit scaler on training data
-            self.target_scaler.fit(self.data[["V"]])
+            # Fit scaler on training data using DataFrame with column name
+            self.target_scaler.fit(self.data[["V"]])  # <- Already correct
         else:
             self.target_scaler = target_scaler
 
@@ -22,15 +22,18 @@ class OptionDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        # Extract features (X) directly without scaling
+        # Extract features (X) - unchanged
         X = torch.tensor(
             self.data[self.feature_columns].iloc[idx].values,
             dtype=torch.float32
         )
 
-        # Transform target while preserving column name
-        target = pd.DataFrame([[self.data["V"].iloc[idx]]], columns=["V"])
-        Y = torch.tensor(self.target_scaler.transform(target)[0][0], dtype=torch.float32)
+        # Fixed target scaling with proper DataFrame input
+        target_value = self.data["V"].iloc[idx]
+        # Create DataFrame with column name to match training format
+        target_df = pd.DataFrame([[target_value]], columns=["V"])
+        scaled_target = self.target_scaler.transform(target_df).flatten()
+        Y = torch.tensor(scaled_target, dtype=torch.float32)
 
         return X, Y
 

@@ -11,6 +11,9 @@ import numpy as np
 import json
 import os
 from sklearn.model_selection import train_test_split
+from dataset import dataset_train
+
+target_scaler = dataset_train.target_scaler
 
 
 def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer, device, epochs):
@@ -71,27 +74,27 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
             best_model_state = model.state_dict()
     return model
 
-def evaluate_model(model: CaNNModel, data_loader, criterion, device):
-    "Evaluate the model performance"
+def evaluate_model(model, data_loader, criterion, device):
     model.eval()
     total_loss = 0
-    predictions = []  # To store predictions
-    targets = []      # To store true targets
+    predictions = []
+    targets = []
 
     with torch.no_grad():
-        for batch_X, batch_y in data_loader:
-            batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-            outputs = model(batch_X.float())
-            target = batch_y.float().view_as(outputs)
-            loss = criterion(outputs, target)
+        for X, Y in data_loader:
+            X, Y = X.to(device), Y.to(device)
+            output = model(X)
+            # Reshape target to match output dimensions
+            target = Y.float().view_as(output)
+            loss = criterion(output, target)
             total_loss += loss.item()
 
-            # Store predictions and targets
-            predictions.extend(outputs.cpu().tolist())
-            targets.extend(target.cpu().tolist())
+            # Store predictions and targets as flattened arrays
+            predictions.extend(output.cpu().numpy().flatten())
+            targets.extend(Y.cpu().numpy().flatten())  # Original target shape is preserved here for correct metrics
 
     avg_loss = total_loss / len(data_loader)
-    return avg_loss, predictions, targets
+    return avg_loss, np.array(predictions), np.array(targets)
 
 # Split existing dataset into training and validation sets
 def train_val_split(dataset, val_size=0.2, random_state=42):
@@ -158,28 +161,38 @@ def main():
     train_loss, train_pred, train_target = evaluate_model(trained_model, train_loader, criterion, device)
     test_loss, test_pred, test_target = evaluate_model(trained_model, test_loader, criterion, device)
 
+    # Convert predictions and targets to plain floats
+    train_pred = [float(x) for x in train_pred]
+    train_target = [float(x) for x in train_target]
+
+    test_pred = [float(x) for x in test_pred]
+    test_target = [float(x) for x in test_target]
+
+    # Save results
     train_df = pd.DataFrame({
-        'predictions': np.array(train_pred).flatten(),
-        'targets': np.array(train_target).flatten()
+        'predictions': train_pred,
+        'targets': train_target
     })
     train_df.to_csv('train_results.csv', index=False)
 
     test_df = pd.DataFrame({
-        'predictions': np.array(test_pred).flatten(),
-        'targets': np.array(test_target).flatten()
+        'predictions': test_pred,
+        'targets': test_target
     })
     test_df.to_csv('test_results.csv', index=False)
 
+    # Calculate and print loss details
     print("In-sample (Training) Performance:")
-    train_loss_details = calculate_loss('train_results.csv')
+    train_loss_details = calculate_loss('train_results.csv', target_scaler)
     for key, value in train_loss_details.items():
         print(f"{key}: {value}")
 
     print("\nOut-of-sample (Test) Performance:")
-    test_loss_details = calculate_loss('test_results.csv')
+    test_loss_details = calculate_loss('test_results.csv', target_scaler)
     for key, value in test_loss_details.items():
         print(f"{key}: {value}")
 
+    # Save metrics
     metrics = {
         "in_sample": train_loss_details,
         "out_of_sample": test_loss_details
