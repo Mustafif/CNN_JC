@@ -24,7 +24,7 @@ def objective(trial):
     dropout_rate = trial.suggest_categorical("dropout_rate", [0.0, 0.1, 0.2, 0.3, 0.4, 0.5])
 
     # Create samplers for train and validation sets
-    train_sampler, val_sampler = train_val_split(dataset_train, val_size=0.1)
+    train_sampler, val_sampler = train_val_split(dataset_train, val_size=0.2)
     test_sampler = RandomSampler(dataset_test)
 
     # Create data loaders

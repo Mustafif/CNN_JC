@@ -12,6 +12,8 @@ import json
 import os
 from sklearn.model_selection import train_test_split
 from dataset import dataset_train
+from sklearn.model_selection import KFold
+
 
 target_scaler = dataset_train.target_scaler
 
@@ -27,8 +29,8 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
         anneal_strategy='cos'
     )
 
-    best_val_loss = float('inf')
-    best_model_state = None
+    # best_val_loss = float('inf')
+    # best_model_state = None
     l1_lambda = 1e-5  # L1 regularization factor
 
     for epoch in range(epochs):
@@ -47,7 +49,7 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
             loss = criterion(output, target) + l1_lambda * l1_loss
             loss.backward()
             # Add gradient clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2)
             optimizer.step()
             scheduler.step()
             train_loss += loss.item()
@@ -68,11 +70,13 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
         avg_val_loss = val_loss / len(val_loader)
         print(f'Epoch {epoch+1}: Train Loss {avg_train_loss:.4f} Val Loss {avg_val_loss:.4f}')
 
-        # Save best model state
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            best_model_state = model.state_dict()
+        # # Save best model state
+        # if avg_val_loss < best_val_loss:
+        #     best_val_loss = avg_val_loss
+
     return model
+
+
 
 def evaluate_model(model, data_loader, criterion, device):
     model.eval()
@@ -142,12 +146,8 @@ def main():
     # Model setup
     model = CaNNModel(dropout_rate=dropout_rate).to(device)
     criterion = nn.HuberLoss()
-    # Warmup scheduler parameters
-    warmup_epochs = 5
-    total_steps = len(train_loader) * epochs
-    warmup_steps = len(train_loader) * warmup_epochs
 
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
         weight_decay=weight_decay,  # Increased weight decay for stronger L2 regularization

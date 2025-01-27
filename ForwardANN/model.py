@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils import spectral_norm as SpectralNorm
 
 class ResidualBlock(nn.Module):
     def __init__(self, channels, dropout_rate):
@@ -29,19 +30,37 @@ class ResidualBlock(nn.Module):
         # Scaled residual connection
         return 0.1 * out + identity  # Scale the residual to improve stability
 
+class FinancialResidualBlock(nn.Module):
+    def __init__(self, channels, dropout_rate):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.BatchNorm1d(channels),
+            nn.GELU(),
+            nn.Linear(channels, channels),
+            nn.Dropout(dropout_rate),
+            nn.Linear(channels, channels),
+            nn.Dropout(dropout_rate * 0.8),
+            SpectralNorm(nn.Linear(channels, channels))  # Add spectral normalization
+        )
+
+    def forward(self, x):
+        return x + 0.3 * self.block(x)  # Reduced residual scaling
+
+
 class CaNNModel(nn.Module):
     def __init__(self, dropout_rate=0.3):
         super(CaNNModel, self).__init__()
-        input_features = 10
+        input_features = 19
         neurons = 200  # Reduced capacity
+
         # Input layer
         self.input_layer = nn.Linear(input_features, neurons)
         self.input_bn = nn.BatchNorm1d(neurons)
 
-        # Residual blocks
-        self.res1 = ResidualBlock(neurons, dropout_rate)
-        self.res2 = ResidualBlock(neurons, dropout_rate)
-        # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+        # Financial residual blocks
+        self.fin_res1 = FinancialResidualBlock(neurons, dropout_rate)
+        self.fin_res2 = FinancialResidualBlock(neurons, dropout_rate)
+        self.fin_res3 = FinancialResidualBlock(neurons, dropout_rate)  # Optional third block
 
         # Output layer
         self.output_bn = nn.BatchNorm1d(neurons)
@@ -66,10 +85,10 @@ class CaNNModel(nn.Module):
         x = self.input_bn(x)
         x = F.relu(x)
 
-        # Residual blocks
-        x = self.res1(x)
-        x = self.res2(x)
-        # x = self.res3(x)  # New residual block
+        # Financial residual blocks
+        x = self.fin_res1(x)
+        x = self.fin_res2(x)
+        x = self.fin_res3(x)  # Optional third block
 
         # Output processing
         x = self.output_bn(x)
@@ -77,6 +96,57 @@ class CaNNModel(nn.Module):
         x = F.softplus(self.output_layer(x))
 
         return x
+
+# class CaNNModel(nn.Module):
+#     def __init__(self, dropout_rate=0.3):
+#         super(CaNNModel, self).__init__()
+#         input_features = 19
+#         neurons = 200  # Reduced capacity
+#         # Input layer
+#         self.input_layer = nn.Linear(input_features, neurons)
+#         self.input_bn = nn.BatchNorm1d(neurons)
+
+#         # Residual blocks
+#         self.res1 = ResidualBlock(neurons, dropout_rate)
+#         self.financial_res_block = FinancialResidualBlock(neurons, dropout_rate)
+#         self.res2 = ResidualBlock(neurons, dropout_rate)
+#         # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+
+#         # Output layer
+#         self.output_bn = nn.BatchNorm1d(neurons)
+#         self.output_layer = nn.Linear(neurons, 1)
+
+#         # Initialize weights
+#         self._init_weights()
+
+#     def _init_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Linear):
+#                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+#                 if m.bias is not None:
+#                     nn.init.constant_(m.bias, 0)
+#             elif isinstance(m, nn.BatchNorm1d):
+#                 nn.init.constant_(m.weight, 1)
+#                 nn.init.constant_(m.bias, 0)
+
+#     def forward(self, x):
+#         # Input processing
+#         x = self.input_layer(x)
+#         x = self.input_bn(x)
+#         x = F.relu(x)
+
+#         # Residual blocks
+#         x = self.res1(x)
+#         x = self.financial_res_block(x)  # Add FinancialResidualBlock
+#         x = self.res2(x)
+#         # x = self.res3(x)  # New residual block
+
+#         # Output processing
+#         x = self.output_bn(x)
+#         x = F.relu(x)
+#         x = F.softplus(self.output_layer(x))
+
+#         return x
 
 
 
@@ -95,7 +165,7 @@ class CaNNModel(nn.Module):
 #         output_activation: Optional[nn.Module] = nn.Softplus()
 #     ):
 #         """
-#         Improved Neural Network model with configurable architecture.
+#          Neural Network model with configurable architecture.
 
 #         Args:
 #             input_features: Number of input features
@@ -234,3 +304,62 @@ class CaNNModel(nn.Module):
 #         # Output layer with softplus activation
 #         x = torch.nn.functional.softplus(self.output_layer(x))
 #         return x
+
+
+# class ResidualBlock(nn.Module):
+#     def __init__(self, channels, dropout_rate):
+#         super().__init__()
+#         self.block = nn.Sequential(
+#             nn.BatchNorm1d(channels),
+#             nn.GELU(),
+#             nn.Linear(channels, channels*2),
+#             nn.Dropout(dropout_rate),
+#             nn.Linear(channels*2, channels),
+#             nn.Dropout(dropout_rate/2)
+#         )
+
+#     def forward(self, x):
+#         return x + self.block(x)  # Remove residual scaling
+
+# class CaNNModel(nn.Module):
+#     def __init__(self, dropout_rate=0.4):
+#         super().__init__()
+#         input_features = 10
+#         neurons = 256
+
+#         self.input = nn.Sequential(
+#             nn.Linear(input_features, neurons),
+#             nn.BatchNorm1d(neurons),
+#             nn.GELU()  # Make sure to use PyTorch's native GELU
+#         )
+
+#         self.res_blocks = nn.Sequential(
+#             ResidualBlock(neurons, dropout_rate),
+#             ResidualBlock(neurons, dropout_rate),
+#             # ResidualBlock(neurons, dropout_rate)
+#         )
+
+#         self.output = nn.Sequential(
+#             nn.BatchNorm1d(neurons),
+#             nn.Linear(neurons, 1),
+#             nn.Softplus()
+#         )
+
+#         # Fixed weight initialization
+#         self.apply(self._init_weights)
+
+#     def _init_weights(self, module):
+#         """Initialize weights for GELU compatibility"""
+#         if isinstance(module, nn.Linear):
+#             # Use fan_in mode with correct GELU gain approximation
+#             nn.init.kaiming_normal_(
+#                 module.weight,
+#                 mode='fan_in',
+#                 nonlinearity='leaky_relu'  # Closest supported approximation
+#             )
+#             nn.init.normal_(module.bias, 0, 0.01)
+
+#     def forward(self, x):
+#         x = self.input(x)
+#         x = self.res_blocks(x)
+#         return self.output(x)
