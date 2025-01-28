@@ -46,71 +46,98 @@ class FinancialResidualBlock(nn.Module):
     def forward(self, x):
         return x + 0.3 * self.block(x)  # Reduced residual scaling
 
+######################################################
+# class CaNNModel(nn.Module):
+#     def __init__(self, dropout_rate=0.4):  # Increased dropout
+#         super(CaNNModel, self).__init__()
+#         input_features = 19
+#         neurons = 128  # Reduced capacity from 200 to 128
+#         self.dropout_rate = dropout_rate
 
-class CaNNModel(nn.Module):
-    def __init__(self, dropout_rate=0.3):
-        super(CaNNModel, self).__init__()
-        input_features = 19
-        neurons = 200  # Reduced capacity
+#         # Input layer with stronger regularization
+#         self.input_layer = nn.Linear(input_features, neurons)
+#         self.input_bn = nn.BatchNorm1d(neurons)
+#         self.input_dropout = nn.Dropout(dropout_rate)
 
-        # Input layer
-        self.input_layer = nn.Linear(input_features, neurons)
-        self.input_bn = nn.BatchNorm1d(neurons)
+#         # Simplified residual architecture
+#         self.res_blocks = nn.Sequential(
+#             ResidualBlock(neurons, dropout_rate),
+#             ResidualBlock(neurons, dropout_rate),
+#             nn.Dropout(dropout_rate)  # Additional dropout between blocks
+#         )
 
-        # Financial residual blocks
-        self.fin_res1 = FinancialResidualBlock(neurons, dropout_rate)
-        self.fin_res2 = FinancialResidualBlock(neurons, dropout_rate)
-        self.fin_res3 = FinancialResidualBlock(neurons, dropout_rate)  # Optional third block
+#         # Output layer with modified initialization
+#         self.output_bn = nn.BatchNorm1d(neurons)
+#         self.output_layer = nn.Linear(neurons, 1)
 
-        # Output layer
-        self.output_bn = nn.BatchNorm1d(neurons)
-        self.output_layer = nn.Linear(neurons, 1)
+#         # Initialize weights with more conservative scheme
+#         self._init_weights()
 
-        # Initialize weights
-        self._init_weights()
+#     def _init_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Linear):
+#                 nn.init.xavier_normal_(m.weight, gain=nn.init.calculate_gain('leaky_relu', 0.01))
+#                 if m.bias is not None:
+#                     nn.init.constant_(m.bias, 0.01)  # Small positive bias
+#             elif isinstance(m, nn.BatchNorm1d):
+#                 nn.init.constant_(m.weight, 1)
+#                 nn.init.constant_(m.bias, 0)
 
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm1d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+#     def forward(self, x):
+#         # Input processing with dropout
+#         x = self.input_layer(x)
+#         x = self.input_bn(x)
+#         x = F.leaky_relu(x, negative_slope=0.01)  # Better gradient flow
+#         x = self.input_dropout(x)
 
-    def forward(self, x):
-        # Input processing
-        x = self.input_layer(x)
-        x = self.input_bn(x)
-        x = F.relu(x)
+#         # Residual blocks
+#         x = self.res_blocks(x)
 
-        # Financial residual blocks
-        x = self.fin_res1(x)
-        x = self.fin_res2(x)
-        x = self.fin_res3(x)  # Optional third block
+#         # Output processing
+#         x = self.output_bn(x)
+#         x = F.leaky_relu(x, negative_slope=0.01)
+#         x = self.output_layer(x)
 
-        # Output processing
-        x = self.output_bn(x)
-        x = F.relu(x)
-        x = F.softplus(self.output_layer(x))
+#         # Modified output activation
+#         return x + 1e-6  # Ensure positive output with numerical stability
 
-        return x
+# class ResidualBlock(nn.Module):
+#     def __init__(self, features, dropout_rate):
+#         super(ResidualBlock, self).__init__()
+#         self.block = nn.Sequential(
+#             nn.Linear(features, features),
+#             nn.BatchNorm1d(features),
+#             nn.LeakyReLU(0.01, inplace=True),
+#             nn.Dropout(dropout_rate),
+#             nn.Linear(features, features),
+#             nn.BatchNorm1d(features)
+#         )
+#         self.dropout = nn.Dropout(dropout_rate)
 
+#     def forward(self, x):
+#         identity = x
+#         out = self.block(x)
+#         out += identity  # Skip connection
+#         out = F.leaky_relu(out, 0.01)
+#         return self.dropout(out)
+
+
+
+##############################################################
 # class CaNNModel(nn.Module):
 #     def __init__(self, dropout_rate=0.3):
 #         super(CaNNModel, self).__init__()
 #         input_features = 19
-#         neurons = 200  # Reduced capacity
+#         neurons = 128  # Reduced capacity
+
 #         # Input layer
 #         self.input_layer = nn.Linear(input_features, neurons)
 #         self.input_bn = nn.BatchNorm1d(neurons)
 
-#         # Residual blocks
-#         self.res1 = ResidualBlock(neurons, dropout_rate)
-#         self.financial_res_block = FinancialResidualBlock(neurons, dropout_rate)
-#         self.res2 = ResidualBlock(neurons, dropout_rate)
-#         # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+#         # Financial residual blocks
+#         self.fin_res1 = FinancialResidualBlock(neurons, dropout_rate)
+#         self.fin_res2 = FinancialResidualBlock(neurons, dropout_rate)
+#         self.fin_res3 = FinancialResidualBlock(neurons, dropout_rate)  # Optional third block
 
 #         # Output layer
 #         self.output_bn = nn.BatchNorm1d(neurons)
@@ -135,11 +162,10 @@ class CaNNModel(nn.Module):
 #         x = self.input_bn(x)
 #         x = F.relu(x)
 
-#         # Residual blocks
-#         x = self.res1(x)
-#         x = self.financial_res_block(x)  # Add FinancialResidualBlock
-#         x = self.res2(x)
-#         # x = self.res3(x)  # New residual block
+#         # Financial residual blocks
+#         x = self.fin_res1(x)
+#         x = self.fin_res2(x)
+#         x = self.fin_res3(x)  # Optional third block
 
 #         # Output processing
 #         x = self.output_bn(x)
@@ -147,6 +173,57 @@ class CaNNModel(nn.Module):
 #         x = F.softplus(self.output_layer(x))
 
 #         return x
+
+class CaNNModel(nn.Module):
+    def __init__(self, dropout_rate=0.3):
+        super(CaNNModel, self).__init__()
+        input_features = 19
+        neurons = 64  # Reduced capacity
+        # Input layer
+        self.input_layer = nn.Linear(input_features, neurons)
+        self.input_bn = nn.BatchNorm1d(neurons)
+
+        # Residual blocks
+        self.res1 = ResidualBlock(neurons, dropout_rate)
+        # self.financial_res_block = FinancialResidualBlock(neurons, dropout_rate)
+        self.res2 = ResidualBlock(neurons, dropout_rate)
+        # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+
+        # Output layer
+        self.output_bn = nn.BatchNorm1d(neurons)
+        self.output_layer = nn.Linear(neurons, 1)
+
+        # Initialize weights
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        # Input processing
+        x = self.input_layer(x)
+        x = self.input_bn(x)
+        x = F.relu(x)
+
+        # Residual blocks
+        x = self.res1(x)
+        # x = self.financial_res_block(x)  # Add FinancialResidualBlock
+        x = self.res2(x)
+        # x = self.res3(x)  # New residual block
+
+        # Output processing
+        x = self.output_bn(x)
+        x = F.relu(x)
+        x = F.softplus(self.output_layer(x))
+
+        return x
 
 
 

@@ -31,7 +31,7 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
 
     # best_val_loss = float('inf')
     # best_model_state = None
-    l1_lambda = 1e-5  # L1 regularization factor
+    l1_lambda = 1e-4  # L1 regularization factor
 
     for epoch in range(epochs):
         model.train()
@@ -87,7 +87,8 @@ def evaluate_model(model, data_loader, criterion, device):
     with torch.no_grad():
         for X, Y in data_loader:
             X, Y = X.to(device), Y.to(device)
-            output = model(X)
+            noise = torch.randn_like(X) * 0.05 # Add Gaussian noise to input
+            output = model(X + noise)
             # Reshape target to match output dimensions
             target = Y.float().view_as(output)
             loss = criterion(output, target)
@@ -211,6 +212,44 @@ def main():
                     json.dump(metrics, f)
                     scripted_model = torch.jit.script(trained_model)
                     scripted_model.save("model.pt")
+    save_model_checkpoint(trained_model, metrics)
+
+from datetime import datetime
+
+def save_model_checkpoint(trained_model, metrics):
+    # Create base directory
+    base_dir = "saved_models"
+    os.makedirs(base_dir, exist_ok=True)
+
+    # Create timestamped subfolder
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_dir = os.path.join(base_dir, timestamp)
+
+    # Prompt user for confirmation
+    user_input = input(f"Save model to folder '{save_dir}'? [y/n]: ").lower()
+
+    if user_input in ('y', 'yes'):
+        # Create directory structure
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Define paths
+        metrics_path = os.path.join(save_dir, "metrics.json")
+        model_path = os.path.join(save_dir, "model.pt")
+
+        # Save metrics
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=4)
+
+        # Save model
+        scripted_model = torch.jit.script(trained_model)
+        scripted_model.save(model_path)
+
+        print("\nSaved successfully to:")
+        print(f"📁 {save_dir}/")
+        print("├── 📄 metrics.json")
+        print("└── 🧠 model.pt\n")
+    else:
+        print("Model not saved.")
 
 if __name__ == '__main__':
     main()

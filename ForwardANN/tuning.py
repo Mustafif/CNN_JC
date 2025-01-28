@@ -41,7 +41,7 @@ def objective(trial):
     # Model setup with dropout rate passed as a parameter
     model = CaNNModel(dropout_rate=dropout_rate).to(device)
     criterion = nn.HuberLoss()
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
         weight_decay=weight_decay,
