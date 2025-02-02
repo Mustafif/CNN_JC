@@ -28,7 +28,9 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
         pct_start=0.3,
         anneal_strategy='cos'
     )
-
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode='min', factor=0.5, patience=5
+    # )
     # best_val_loss = float('inf')
     # best_model_state = None
     l1_lambda = 1e-4  # L1 regularization factor
@@ -43,13 +45,13 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
             output = model(batch_X.float())
             target = batch_y.float().view_as(output)
             # Add L1 regularization
-            l1_loss = 0
-            for param in model.parameters():
-                l1_loss += torch.sum(torch.abs(param))
-            loss = criterion(output, target) + l1_lambda * l1_loss
+            # l1_loss = 0
+            # for param in model.parameters():
+            #     l1_loss += torch.sum(torch.abs(param))
+            loss = criterion(output, target) # + l1_lambda * l1_loss
             loss.backward()
             # Add gradient clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2)
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             optimizer.step()
             scheduler.step()
             train_loss += loss.item()
@@ -66,6 +68,7 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
                 target = batch_y.float().view_as(output)
                 loss = criterion(output, target)
                 val_loss += loss.item()
+                # scheduler.step(val_loss)
 
         avg_val_loss = val_loss / len(val_loader)
         print(f'Epoch {epoch+1}: Train Loss {avg_train_loss:.4f} Val Loss {avg_val_loss:.4f}')
@@ -87,8 +90,8 @@ def evaluate_model(model, data_loader, criterion, device):
     with torch.no_grad():
         for X, Y in data_loader:
             X, Y = X.to(device), Y.to(device)
-            noise = torch.randn_like(X) * 0.05 # Add Gaussian noise to input
-            output = model(X + noise)
+            # noise = torch.randn_like(X) * 0.05 # Add Gaussian noise to input
+            output = model(X)
             # Reshape target to match output dimensions
             target = Y.float().view_as(output)
             loss = criterion(output, target)

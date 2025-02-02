@@ -173,57 +173,57 @@ class FinancialResidualBlock(nn.Module):
 #         x = F.softplus(self.output_layer(x))
 
 #         return x
+# current
+# class CaNNModel(nn.Module):
+#     def __init__(self, dropout_rate=0.3):
+#         super(CaNNModel, self).__init__()
+#         input_features = 19
+#         neurons = 64  # Reduced capacity
+#         # Input layer
+#         self.input_layer = nn.Linear(input_features, neurons)
+#         self.input_bn = nn.BatchNorm1d(neurons)
 
-class CaNNModel(nn.Module):
-    def __init__(self, dropout_rate=0.3):
-        super(CaNNModel, self).__init__()
-        input_features = 19
-        neurons = 64  # Reduced capacity
-        # Input layer
-        self.input_layer = nn.Linear(input_features, neurons)
-        self.input_bn = nn.BatchNorm1d(neurons)
+#         # Residual blocks
+#         self.res1 = ResidualBlock(neurons, dropout_rate)
+#         # self.financial_res_block = FinancialResidualBlock(neurons, dropout_rate)
+#         self.res2 = ResidualBlock(neurons, dropout_rate)
+#         # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
 
-        # Residual blocks
-        self.res1 = ResidualBlock(neurons, dropout_rate)
-        # self.financial_res_block = FinancialResidualBlock(neurons, dropout_rate)
-        self.res2 = ResidualBlock(neurons, dropout_rate)
-        # self.res3 = ResidualBlock(neurons, dropout_rate)  # New residual block
+#         # Output layer
+#         self.output_bn = nn.BatchNorm1d(neurons)
+#         self.output_layer = nn.Linear(neurons, 1)
 
-        # Output layer
-        self.output_bn = nn.BatchNorm1d(neurons)
-        self.output_layer = nn.Linear(neurons, 1)
+#         # Initialize weights
+#         self._init_weights()
 
-        # Initialize weights
-        self._init_weights()
+#     def _init_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Linear):
+#                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+#                 if m.bias is not None:
+#                     nn.init.constant_(m.bias, 0)
+#             elif isinstance(m, nn.BatchNorm1d):
+#                 nn.init.constant_(m.weight, 1)
+#                 nn.init.constant_(m.bias, 0)
 
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm1d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+#     def forward(self, x):
+#         # Input processing
+#         x = self.input_layer(x)
+#         x = self.input_bn(x)
+#         x = F.relu(x)
 
-    def forward(self, x):
-        # Input processing
-        x = self.input_layer(x)
-        x = self.input_bn(x)
-        x = F.relu(x)
+#         # Residual blocks
+#         x = self.res1(x)
+#         # x = self.financial_res_block(x)  # Add FinancialResidualBlock
+#         x = self.res2(x)
+#         # x = self.res3(x)  # New residual block
 
-        # Residual blocks
-        x = self.res1(x)
-        # x = self.financial_res_block(x)  # Add FinancialResidualBlock
-        x = self.res2(x)
-        # x = self.res3(x)  # New residual block
+#         # Output processing
+#         x = self.output_bn(x)
+#         x = F.relu(x)
+#         x = F.softplus(self.output_layer(x))
 
-        # Output processing
-        x = self.output_bn(x)
-        x = F.relu(x)
-        x = F.softplus(self.output_layer(x))
-
-        return x
+#         return x
 
 
 
@@ -297,91 +297,50 @@ class CaNNModel(nn.Module):
 
 # import torch
 # import torch.nn as nn
+import torch
+import torch.nn as nn
 
-# class CaNNModel(nn.Module):
-#     def __init__(self, dropout_rate=0.0):
-#         super(CaNNModel, self).__init__()
-#         input_features = 10
-#         neurons = 250
+class CaNNModel(nn.Module):
+    def __init__(self, input_features=10, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
+        super().__init__()
 
-#         # Layer Normalization for each layer
-#         self.layer_norm_input = nn.LayerNorm(neurons)
-#         self.layer_norm1 = nn.LayerNorm(neurons)
-#         self.layer_norm2 = nn.LayerNorm(neurons)
-#         self.layer_norm3 = nn.LayerNorm(neurons)
-#         self.layer_norm4 = nn.LayerNorm(neurons)
-#         self.layer_norm5 = nn.LayerNorm(neurons)
-#         self.layer_norm6 = nn.LayerNorm(neurons)
+        # Create list of layers
+        layers = []
 
-#         # Linear layers
-#         self.input_layer = nn.Linear(input_features, neurons)
-#         self.hl1 = nn.Linear(neurons, neurons)
-#         self.hl2 = nn.Linear(neurons, neurons)
-#         self.hl3 = nn.Linear(neurons, neurons)
-#         self.hl4 = nn.Linear(neurons, neurons)
-#         self.hl5 = nn.Linear(neurons, neurons)
-#         self.hl6 = nn.Linear(neurons, neurons)
-#         self.output_layer = nn.Linear(neurons, 1)
+        # Input layer
+        layers.extend([
+            nn.Linear(input_features, hidden_size),
+            nn.LayerNorm(hidden_size),
+            nn.ReLU(),
+        ])
 
-#         # Dropout layers
-#         self.dropout1 = nn.Dropout(dropout_rate)
-#         self.dropout2 = nn.Dropout(dropout_rate)
-#         self.dropout3 = nn.Dropout(dropout_rate)
-#         self.dropout4 = nn.Dropout(dropout_rate)
-#         self.dropout5 = nn.Dropout(dropout_rate)
-#         self.dropout6 = nn.Dropout(dropout_rate)
+        # Hidden layers
+        for _ in range(num_hidden_layers):
+            layers.extend([
+                nn.Linear(hidden_size, hidden_size),
+                nn.LayerNorm(hidden_size),
+                nn.ReLU(),
+                nn.Dropout(dropout_rate)
+            ])
 
-#         # Weight initialization
-#         self.reset_parameters()
+        # Combine all hidden layers into a Sequential
+        self.hidden_layers = nn.Sequential(*layers)
 
-#     def reset_parameters(self):
-#         # Xavier/Glorot initialization for better weight initialization
-#         for layer in [self.input_layer, self.hl1, self.hl2, self.hl3,
-#                       self.hl4, self.hl5, self.hl6, self.output_layer]:
-#             nn.init.xavier_normal_(layer.weight)
-#             nn.init.zeros_(layer.bias)
+        # Output layer
+        self.output_layer = nn.Linear(hidden_size, 1)
 
-#     def forward(self, x):
-#         # Input layer with normalization and activation
-#         x = self.input_layer(x)
-#         x = self.layer_norm_input(x)
-#         x = activation(x)
+        # Initialize weights
+        self.apply(self._init_weights)
 
-#         # Hidden layers with normalization, dropout, and activation
-#         x = self.hl1(x)
-#         x = self.layer_norm1(x)
-#         x = activation(x)
-#         x = self.dropout1(x)
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            nn.init.kaiming_uniform_(module.weight)
+            nn.init.zeros_(module.bias)
 
-#         x = self.hl2(x)
-#         x = self.layer_norm2(x)
-#         x = activation(x)
-#         x = self.dropout2(x)
-
-#         x = self.hl3(x)
-#         x = self.layer_norm3(x)
-#         x = activation(x)
-#         x = self.dropout3(x)
-
-#         x = self.hl4(x)
-#         x = self.layer_norm4(x)
-#         x = activation(x)
-#         x = self.dropout4(x)
-
-#         x = self.hl5(x)
-#         x = self.layer_norm5(x)
-#         x = activation(x)
-#         x = self.dropout5(x)
-
-#         x = self.hl6(x)
-#         x = self.layer_norm6(x)
-#         x = activation(x)
-#         x = self.dropout6(x)
-
-#         # Output layer with softplus activation
-#         x = torch.nn.functional.softplus(self.output_layer(x))
-#         return x
-
+    def forward(self, x):
+        x = self.hidden_layers(x)
+        x = torch.nn.functional.softplus(self.output_layer(x))
+        return x
 
 # class ResidualBlock(nn.Module):
 #     def __init__(self, channels, dropout_rate):

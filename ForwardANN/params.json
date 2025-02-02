@@ -1,7 +1,7 @@
 {
-    "lr": 0.0020096522874312604,
-    "weight_decay": 3.110397659207548e-05,
-    "batch_size": 256,
-    "epochs": 125,
-    "dropout_rate": 0.3
+  "lr": 0.0020096522874312604,
+  "weight_decay": 3.110397659207548e-5,
+  "batch_size": 64,
+  "epochs": 1000,
+  "dropout_rate": 0.0
 }

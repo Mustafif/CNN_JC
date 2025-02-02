@@ -9,7 +9,7 @@ gamma = 100;
 lambda = 0.5;
 
 % Use array to store days
-max_day = 30;
+max_day = 13;
 days = 1:max_day;
 
 % Preallocate dataset generation
