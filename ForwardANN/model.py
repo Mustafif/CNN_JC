@@ -3,48 +3,48 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm as SpectralNorm
 
-class ResidualBlock(nn.Module):
-    def __init__(self, channels, dropout_rate):
-        super(ResidualBlock, self).__init__()
-        self.bn1 = nn.BatchNorm1d(channels)
-        self.linear1 = nn.Linear(channels, channels)
-        self.bn2 = nn.BatchNorm1d(channels)
-        self.linear2 = nn.Linear(channels, channels)
-        self.dropout = nn.Dropout(dropout_rate)
+# class ResidualBlock(nn.Module):
+#     def __init__(self, channels, dropout_rate):
+#         super(ResidualBlock, self).__init__()
+#         self.bn1 = nn.BatchNorm1d(channels)
+#         self.linear1 = nn.Linear(channels, channels)
+#         self.bn2 = nn.BatchNorm1d(channels)
+#         self.linear2 = nn.Linear(channels, channels)
+#         self.dropout = nn.Dropout(dropout_rate)
 
-    def forward(self, x):
-        identity = x
+#     def forward(self, x):
+#         identity = x
 
-        # First transformation
-        out = self.bn1(x)
-        out = F.relu(out)
-        out = self.linear1(out)
-        out = self.dropout(out)  # Add dropout after first linear
+#         # First transformation
+#         out = self.bn1(x)
+#         out = F.relu(out)
+#         out = self.linear1(out)
+#         out = self.dropout(out)  # Add dropout after first linear
 
-        # Second transformation
-        out = self.bn2(out)
-        out = F.relu(out)
-        out = self.linear2(out)
-        out = self.dropout(out)  # Add dropout after second linear
+#         # Second transformation
+#         out = self.bn2(out)
+#         out = F.relu(out)
+#         out = self.linear2(out)
+#         out = self.dropout(out)  # Add dropout after second linear
 
-        # Scaled residual connection
-        return 0.1 * out + identity  # Scale the residual to improve stability
+#         # Scaled residual connection
+#         return 0.1 * out + identity  # Scale the residual to improve stability
 
-class FinancialResidualBlock(nn.Module):
-    def __init__(self, channels, dropout_rate):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.BatchNorm1d(channels),
-            nn.GELU(),
-            nn.Linear(channels, channels),
-            nn.Dropout(dropout_rate),
-            nn.Linear(channels, channels),
-            nn.Dropout(dropout_rate * 0.8),
-            SpectralNorm(nn.Linear(channels, channels))  # Add spectral normalization
-        )
+# class FinancialResidualBlock(nn.Module):
+#     def __init__(self, channels, dropout_rate):
+#         super().__init__()
+#         self.block = nn.Sequential(
+#             nn.BatchNorm1d(channels),
+#             nn.GELU(),
+#             nn.Linear(channels, channels),
+#             nn.Dropout(dropout_rate),
+#             nn.Linear(channels, channels),
+#             nn.Dropout(dropout_rate * 0.8),
+#             SpectralNorm(nn.Linear(channels, channels))  # Add spectral normalization
+#         )
 
-    def forward(self, x):
-        return x + 0.3 * self.block(x)  # Reduced residual scaling
+#     def forward(self, x):
+#         return x + 0.3 * self.block(x)  # Reduced residual scaling
 
 ######################################################
 # class CaNNModel(nn.Module):
@@ -301,7 +301,7 @@ import torch
 import torch.nn as nn
 
 class CaNNModel(nn.Module):
-    def __init__(self, input_features=10, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
+    def __init__(self, input_features=16, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
         super().__init__()
 
         # Create list of layers
@@ -334,7 +334,8 @@ class CaNNModel(nn.Module):
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
-            nn.init.kaiming_uniform_(module.weight)
+           # nn.init.kaiming_uniform_(module.weight)
+            nn.init.kaiming_normal_(module.weight)
             nn.init.zeros_(module.bias)
 
     def forward(self, x):
