@@ -33,7 +33,7 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
     # )
     # best_val_loss = float('inf')
     # best_model_state = None
-    l1_lambda = 1e-4  # L1 regularization factor
+    # l1_lambda = 1e-4  # L1 regularization factor
 
     for epoch in range(epochs):
         model.train()

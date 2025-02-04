@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
+import sklearn.model_selection as sklearn
 
 def coral(source, target):
     """
@@ -82,6 +83,32 @@ class OptionDataset(Dataset):
         return X, Y
 
 
+def train_test_split(data, test_size=0.3, random_state=42):
+    """
+    Split the dataset into training and validation sets.
+
+    Args:
+        data (pd.DataFrame): Input DataFrame containing the dataset
+        test_size (float): Proportion of the dataset to include in the validation split (0 to 1)
+        random_state (int): Random state for reproducibility
+
+    Returns:
+        tuple: (train_dataset, val_dataset) containing OptionDataset objects
+    """
+    # Split the data using sklearn's train_test_split
+    train_data, val_data = sklearn.train_test_split(
+        data,
+        test_size=test_size,
+        random_state=random_state,
+        shuffle=True
+    )
+
+    # Create OptionDataset objects
+    train_dataset = OptionDataset(train_data, is_train=True)
+    val_dataset = OptionDataset(val_data, is_train=False,
+                               target_scaler=train_dataset.target_scaler)
+
+    return train_dataset, val_dataset
 
 
 def dataset_file(filename):
@@ -91,11 +118,14 @@ def cleandataset(data):
     return data[data['V'] > 0.5].reset_index(drop=True)
 
 # Load and prepare datasets
-data_train = cleandataset(dataset_file('train_dataset.csv'))
-data_test = cleandataset(dataset_file('test_dataset.csv'))
-dataset_train = OptionDataset(data_train, is_train=True)
-dataset_test = OptionDataset(data_test, is_train=False,
-                           target_scaler=dataset_train.target_scaler)
+# data_train = cleandataset(dataset_file('train_dataset.csv'))
+# data_test = cleandataset(dataset_file('test_dataset.csv'))
+
+# dataset_train = OptionDataset(data_train, is_train=True)
+# dataset_test = OptionDataset(data_test, is_train=False,
+#                            target_scaler=dataset_train.target_scaler)
+
+dataset_train, dataset_test = train_test_split(cleandataset(dataset_file('stage3.csv')))
 
 # # Extract raw option prices (not scaled) for CORAL loss
 # source_prices = torch.tensor(data_train["V"].values, dtype=torch.float32).view(-1, 1)

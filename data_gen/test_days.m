@@ -1,4 +1,4 @@
-r = 0.03;
+r = 0.05;
 T = [5, 13, 24, 42, 63, 126, 180, 252, 360];
 m = linspace(0.8, 1.2, 9);
 alpha = 1.33e-6;
@@ -17,7 +17,7 @@ dataset = cell2mat(dataset);
 
 % Prepare headers and save dataset
 headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'V'}';
-filename = "test_dataset.csv";
+filename = "test_dataset2.csv";
 
 % Combine headers with data and write to CSV
 full_dataset = [headers'; num2cell(dataset')];
