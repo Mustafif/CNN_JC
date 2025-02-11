@@ -5,23 +5,29 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import sklearn.model_selection as sklearn
 
+
 def coral(source, target):
     """
     Perform CORAL loss computation between source and target feature distributions.
     """
     d = source.size(1)
-    source_covar = torch.mm((source - source.mean(0)).T, (source - source.mean(0))) / (len(source) - 1)
-    target_covar = torch.mm((target - target.mean(0)).T, (target - target.mean(0))) / (len(target) - 1)
+    source_covar = torch.mm((source - source.mean(0)).T,
+                            (source - source.mean(0))) / (len(source) - 1)
+    target_covar = torch.mm((target - target.mean(0)).T,
+                            (target - target.mean(0))) / (len(target) - 1)
     loss = torch.norm(source_covar - target_covar, p='fro') / (4 * d * d)
     return loss
 
+
 scaler = MinMaxScaler(feature_range=(0, 1))
+
 
 class OptionDataset(Dataset):
     def __init__(self, dataframe, is_train=False, target_scaler=None):
         self.data = dataframe
         self.is_train = is_train
-        self.base_features = ["S0", "m", "r", "T", "corp", "alpha", "beta", "omega", "gamma", "lambda"]
+        self.base_features = ["S0", "m", "r", "T", "corp",
+                              "alpha", "beta", "omega", "gamma", "lambda"]
         self.target_scaler = scaler
         if is_train:
             self.target_scaler.fit(self.data[["V"]])
@@ -43,20 +49,28 @@ class OptionDataset(Dataset):
         # self.data["volatility_measure"] = self.data["volatility_measure"].fillna(self.epsilon)
 
         # Convert Series to Tensor for operations like log and sqrt
-        self.data["log_gamma"] = torch.log(torch.tensor(self.data["gamma"].values) + self.epsilon)
-        self.data["sqrt_omega"] = torch.sqrt(torch.tensor(self.data["omega"].values) + self.epsilon)
-        self.data["inv_T"] = 1 / (torch.tensor(self.data["T"].values) + self.epsilon)
-        self.data["alpha_beta"] = torch.tensor(self.data["alpha"].values) * torch.tensor(self.data["beta"].values)
+        self.data["log_gamma"] = torch.log(torch.tensor(
+            self.data["gamma"].values) + self.epsilon)
+        self.data["log_m"] = torch.log(torch.tensor(self.data["m"].values))
+        self.data["sqrt_omega"] = torch.sqrt(
+            torch.tensor(self.data["omega"].values) + self.epsilon)
+        self.data["inv_T"] = 1 / \
+            (torch.tensor(self.data["T"].values) + self.epsilon)
+        self.data["alpha_beta"] = torch.tensor(
+            self.data["alpha"].values) * torch.tensor(self.data["beta"].values)
         # self.data["risk_adjusted"] = (torch.tensor(self.data["corp"].values) * torch.tensor(self.data["omega"].values)) / (torch.tensor(self.data["gamma"].values) + self.epsilon)
-        self.data["time_decay"] = torch.exp(-0.05 * torch.tensor(self.data["T"].values))
-
+        self.data["time_decay"] = torch.exp(-0.05 *
+                                            torch.tensor(self.data["T"].values))
+        self.data["h0"] = torch.tensor((self.data["omega"].values + self.data["alpha"].values) / (1 - self.data["beta"].values - self.data["alpha"].values * self.data["gamma"].values**2))
+        self.data["annual_vol"] = torch.tensor(np.sqrt(252.0 * self.data["h0"].values))
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         # Directly access precomputed features for this sample
         row = self.data.iloc[idx]
-        base_features = torch.tensor(row[self.base_features].values, dtype=torch.float32)
+        base_features = torch.tensor(
+            row[self.base_features].values, dtype=torch.float32)
 
         # Extract precomputed engineered features
         engineered_features = torch.tensor([
@@ -68,7 +82,9 @@ class OptionDataset(Dataset):
             row["inv_T"],
             row["alpha_beta"],
             # row["risk_adjusted"],
-            row["time_decay"]
+            row["time_decay"],
+            row["h0"],
+            row["annual_vol"]
         ], dtype=torch.float32)
 
         # Concatenate base features with engineered features
@@ -106,7 +122,7 @@ def train_test_split(data, test_size=0.3, random_state=42):
     # Create OptionDataset objects
     train_dataset = OptionDataset(train_data, is_train=True)
     val_dataset = OptionDataset(val_data, is_train=False,
-                               target_scaler=train_dataset.target_scaler)
+                                target_scaler=train_dataset.target_scaler)
 
     return train_dataset, val_dataset
 
@@ -114,18 +130,21 @@ def train_test_split(data, test_size=0.3, random_state=42):
 def dataset_file(filename):
     return pd.read_csv(filename)
 
+
 def cleandataset(data):
     return data[data['V'] > 0.5].reset_index(drop=True)
 
 # Load and prepare datasets
 # data_train = cleandataset(dataset_file('train_dataset.csv'))
-# data_test = cleandataset(dataset_file('test_dataset.csv'))
+# data_test = cleandataset(dataset_file('../data_gen/test_dataset2.csv'))
 
 # dataset_train = OptionDataset(data_train, is_train=True)
 # dataset_test = OptionDataset(data_test, is_train=False,
 #                            target_scaler=dataset_train.target_scaler)
 
-dataset_train, dataset_test = train_test_split(cleandataset(dataset_file('stage3.csv')))
+
+dataset_train, dataset_test = train_test_split(
+    cleandataset(dataset_file('../data_gen/stage2.csv')))
 
 # # Extract raw option prices (not scaled) for CORAL loss
 # source_prices = torch.tensor(data_train["V"].values, dtype=torch.float32).view(-1, 1)

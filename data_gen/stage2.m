@@ -1,34 +1,20 @@
-%% Contracts
-% contract is defined as a 1x19 matrix 
-% 1 - r 
-% 2-10 T
-% 11-19 m
+% Set the number of contracts
+n = 27;
 
-% for our stage 2 dataset, we will do 5 contracts 
-c1 = [0.03 ...
-    [5, 10, 21, 42, 63, 126, 180, 252, 360]...
-    linspace(0.8, 1.2, 9)];
-c2 = [0.05 ...
-    [5, 12, 26, 48, 63, 123, 160, 252, 352]...
-    linspace(0.85, 1.1, 9)];
-c3 = [0.04 ...
-    [7, 18, 26, 40, 69, 120, 161, 255, 300]...
-    linspace(0.85, 1.2, 9)];
-c4 = [0.06 ...
-    [5, 10, 21, 42, 63, 126, 180, 252, 360]...
-    linspace(0.80, 1.15, 9)];
+% Generate n sets of HNGARCH parameters
+params = genHNGarchParams(n);
 
-ds1 = dataset_contract(c1);
-ds2 = dataset_contract(c2);
-ds3 = dataset_contract(c3);
-ds4 = dataset_contract(c4);
+% Generate datasets for each contract
+contracts = arrayfun(@(i) dataset_contract2(params(i, :)), 1:n, 'UniformOutput', false);
 
-ds = [ds1 ds2 ds3 ds4];
+% Concatenate datasets
+ds = [contracts{:}];
 
+% Define headers for dataset
 headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'V'}';
+
+% Save dataset to CSV
 filename = 'stage2.csv';
 dataset = [headers'; num2cell(ds')];
 writecell(dataset, filename);
 disp(['Dataset saved as ', filename]);
-
-

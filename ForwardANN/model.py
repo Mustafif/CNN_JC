@@ -301,7 +301,7 @@ import torch
 import torch.nn as nn
 
 class CaNNModel(nn.Module):
-    def __init__(self, input_features=16, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
+    def __init__(self, input_features=18, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
         super().__init__()
 
         # Create list of layers
@@ -325,7 +325,7 @@ class CaNNModel(nn.Module):
 
         # Combine all hidden layers into a Sequential
         self.hidden_layers = nn.Sequential(*layers)
-
+       # self.spc = SpectralNorm(nn.Linear(hidden_size, hidden_size))
         # Output layer
         self.output_layer = nn.Linear(hidden_size, 1)
 
@@ -340,6 +340,7 @@ class CaNNModel(nn.Module):
 
     def forward(self, x):
         x = self.hidden_layers(x)
+        # x = self.spc(x)
         x = torch.nn.functional.softplus(self.output_layer(x))
         return x
 

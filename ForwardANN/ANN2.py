@@ -4,16 +4,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, RandomSampler, SubsetRandomSampler
 import pandas as pd
-from torch.optim.lr_scheduler import StepLR
 from loss import calculate_loss
-import time
 import numpy as np
 import json
 import os
 from sklearn.model_selection import train_test_split
 from dataset import dataset_train
-from sklearn.model_selection import KFold
-
+import matplotlib.pyplot as plt
 
 target_scaler = dataset_train.target_scaler
 
@@ -28,6 +25,9 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
         pct_start=0.3,
         anneal_strategy='cos'
     )
+
+    train_losses = []
+    val_losses = []
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer, mode='min', factor=0.5, patience=5
     # )
@@ -57,6 +57,7 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
             train_loss += loss.item()
 
         avg_train_loss = train_loss / len(train_loader)
+        train_losses.append(avg_train_loss)
 
         # validation phase
         model.eval()
@@ -71,13 +72,14 @@ def train_model(model: CaNNModel, train_loader, val_loader, criterion, optimizer
                 # scheduler.step(val_loss)
 
         avg_val_loss = val_loss / len(val_loader)
+        val_losses.append(avg_val_loss)
         print(f'Epoch {epoch+1}: Train Loss {avg_train_loss:.4f} Val Loss {avg_val_loss:.4f}')
 
         # # Save best model state
         # if avg_val_loss < best_val_loss:
         #     best_val_loss = avg_val_loss
 
-    return model
+    return model, train_losses, val_losses
 
 
 
@@ -159,7 +161,7 @@ def main():
         eps=1e-8
     )
     # Training
-    trained_model = train_model(model, train_loader, val_loader, criterion, optimizer, device, epochs=epochs)
+    trained_model, tl, vl = train_model(model, train_loader, val_loader, criterion, optimizer, device, epochs=epochs)
 
     # Evaluation
     train_loss, train_pred, train_target = evaluate_model(trained_model, train_loader, criterion, device)
@@ -215,11 +217,11 @@ def main():
                     json.dump(metrics, f)
                     scripted_model = torch.jit.script(trained_model)
                     scripted_model.save("model.pt")
-    save_model_checkpoint(trained_model, metrics)
+    save_model_checkpoint(trained_model, metrics, tl, vl)
 
 from datetime import datetime
 
-def save_model_checkpoint(trained_model, metrics):
+def save_model_checkpoint(trained_model, metrics, tl, vl):
     # Create base directory
     base_dir = "saved_models"
     os.makedirs(base_dir, exist_ok=True)
@@ -238,6 +240,7 @@ def save_model_checkpoint(trained_model, metrics):
         # Define paths
         metrics_path = os.path.join(save_dir, "metrics.json")
         model_path = os.path.join(save_dir, "model.pt")
+        graph_path = os.path.join(save_dir, "learning_curve.png")
 
         # Save metrics
         with open(metrics_path, 'w') as f:
@@ -247,10 +250,22 @@ def save_model_checkpoint(trained_model, metrics):
         scripted_model = torch.jit.script(trained_model)
         scripted_model.save(model_path)
 
+        # Save learning curve
+        plt.figure(figsize=(8, 6))
+        plt.plot(tl, label="Train Loss")
+        plt.plot(vl, label="Validation Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Training vs Validation Loss")
+        plt.legend()
+        plt.savefig(graph_path)
+        plt.close()
+
         print("\nSaved successfully to:")
         print(f"📁 {save_dir}/")
         print("├── 📄 metrics.json")
         print("└── 🧠 model.pt\n")
+        print("└── 📉 learning_curve.png\n")
     else:
         print("Model not saved.")
 
