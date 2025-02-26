@@ -1,18 +1,21 @@
-function [nodes_ht, mu, var, k3, k4] = TreeNodes_ht_Duan(m_h, hd, qht, gamma_h, alpha, beta, omega, N)
+function [nodes_ht, mu, var, k3, k4] = TreeNodes_ht_Duan(m_h, hd, qht, gamma_h, alpha, beta, omega, lambda, N)
 % Compute the first four moments of h_t of Duan's GARCH model and
-% construct all tree nodes of h_t
+% construct all tree nodes of h_t under Q measure
 %
-% Duan's GARCH specification:
-%       X_t = r + lambda*h_t + sqrt(h_t)z_t    z_t~~N(0,1)
-%       h_{t+1} = omega + alpha*(r_t - r - lambda*h_t)^2 + beta*h_t
+% Duan's GARCH specification under Q measure:
+%       R_t = r - 0.5*h_t + sqrt(h_t)*z_t    z_t ~ N(0,1)
+%       h_t = omega + beta*h_{t-1} + alpha*h_{t-1}*(z_{t-1} - lambda)^2
 %
 % Input:
-%     m_h  -- number of tree nodes of h_t
-%     hd -- discrete values of h_1
-%     qht -- corresponding probabilities of hd
+%     m_h    -- number of tree nodes of h_t
+%     hd     -- discrete values of h_1
+%     qht    -- corresponding probabilities of hd
 %     gamma_h -- parameter for generating z_t
-%     alpha, beta, omega -- GARCH parameters
-%     N -- # of time steps
+%     alpha  -- GARCH innovation parameter
+%     beta   -- GARCH persistence parameter
+%     omega  -- GARCH constant term
+%     lambda -- Risk premium parameter
+%     N      -- # of time steps
 
 numPoint = N + 1;
 
@@ -30,29 +33,29 @@ diffB2(1) = 0;
 diffB3(1) = 0;
 diffB4(1) = 0;
 
-% Compute B derivatives under Duan's specification
-% check this 
+% Compute B derivatives under Q-measure specification
 for row = 2:numPoint
-    % 0th order
-    diffB0(row) = beta * diffB0(row-1) + alpha * diffB0(row-1)/(1 - 2*alpha*diffB0(row-1));
+    % Define terms for Q-measure adjustments
+    lambda_term = lambda^2;
     
-    % 1st order
-    diffB1(row) = beta * diffB1(row-1) + (alpha * (1 + 2*diffB0(row-1)) * diffB1(row-1))/(1 - 2*alpha*diffB0(row-1))^2;
+    % 0th order - adjusted for Q-measure
+    diffB0(row) = beta * diffB0(row-1) + alpha * (1 + lambda_term) * diffB0(row-1);
     
-    % 2nd order
-    diffB2(row) = beta * diffB2(row-1) + ...
-        (2*alpha * diffB1(row-1)^2)/(1 - 2*alpha*diffB0(row-1))^2 + ...
-        (alpha * (1 + 2*diffB0(row-1)) * diffB2(row-1))/(1 - 2*alpha*diffB0(row-1))^2;
+    % 1st order - adjusted for Q-measure
+    diffB1(row) = beta * diffB1(row-1) + alpha * (1 + lambda_term) * diffB1(row-1);
     
-    % 3rd order
-    diffB3(row) = beta * diffB3(row-1) + ...
-        (6*alpha * diffB1(row-1) * diffB2(row-1))/(1 - 2*alpha*diffB0(row-1))^2 +...
-        (alpha * (1 + 2*diffB0(row-1)) * diffB3(row-1))/(1 - 2*alpha*diffB0(row-1))^2;
+    % 2nd order - adjusted for Q-measure
+    diffB2(row) = beta * diffB2(row-1) + alpha * (1 + 2*lambda_term) * diffB2(row-1) + ...
+                  2 * alpha * diffB1(row-1)^2;
     
-    % 4th order
-    diffB4(row) = beta * diffB4(row-1) + ...
-        (8*alpha * diffB1(row-1) * diffB3(row-1) + 6*alpha * diffB2(row-1)^2)/(1 - 2*alpha*diffB0(row-1))^2 +...
-        (alpha * (1 + 2*diffB0(row-1)) * diffB4(row-1))/(1 - 2*alpha*diffB0(row-1))^2;
+    % 3rd order - adjusted for Q-measure
+    diffB3(row) = beta * diffB3(row-1) + alpha * (1 + 3*lambda_term) * diffB3(row-1) + ...
+                  6 * alpha * diffB1(row-1) * diffB2(row-1);
+    
+    % 4th order - adjusted for Q-measure
+    diffB4(row) = beta * diffB4(row-1) + alpha * (1 + 4*lambda_term) * diffB4(row-1) + ...
+                  8 * alpha * diffB1(row-1) * diffB3(row-1) + ...
+                  6 * alpha * diffB2(row-1)^2;
 end
 
 % Initialize and compute A derivatives
@@ -63,26 +66,29 @@ diffA3 = zeros(numPoint, 1);
 diffA4 = zeros(numPoint, 1);
 
 for row = 2:numPoint
-    % 0th order
-    diffA0(row) = diffA0(row-1) + omega * diffB0(row-1) - 0.5 * log(1 - 2*alpha*diffB0(row-1));
+    % 0th order - adjusted for Q-measure
+    diffA0(row) = diffA0(row-1) + omega * diffB0(row-1) + ...
+                  0.5 * log(1 + 2*alpha*lambda_term*diffB0(row-1));
     
-    % 1st order
-    diffA1(row) = diffA1(row-1) + omega * diffB1(row-1) + alpha/(1 - 2*alpha*diffB0(row-1)) * diffB1(row-1);
+    % 1st order - adjusted for Q-measure
+    diffA1(row) = diffA1(row-1) + omega * diffB1(row-1) + ...
+                  alpha * lambda_term * diffB1(row-1);
     
-    % 2nd order
+    % 2nd order - adjusted for Q-measure
     diffA2(row) = diffA2(row-1) + omega * diffB2(row-1) + ...
-        (2*alpha^2 * diffB1(row-1)^2)/(1 - 2*alpha*diffB0(row-1))^2 +...
-        alpha/(1 - 2*alpha*diffB0(row-1)) * diffB2(row-1);
+                  alpha * lambda_term * diffB2(row-1) + ...
+                  alpha * diffB1(row-1)^2;
     
-    % 3rd order
-    diffA3(row) = diffA3(row-1) + omega * diffB3(row-1) +...
-        (6*alpha^2 * diffB1(row-1) * diffB2(row-1))/(1 - 2*alpha*diffB0(row-1))^2 +...
-        alpha/(1 - 2*alpha*diffB0(row-1)) * diffB3(row-1);
+    % 3rd order - adjusted for Q-measure
+    diffA3(row) = diffA3(row-1) + omega * diffB3(row-1) + ...
+                  alpha * lambda_term * diffB3(row-1) + ...
+                  3 * alpha * diffB1(row-1) * diffB2(row-1);
     
-    % 4th order
-    diffA4(row) = diffA4(row-1) + omega * diffB4(row-1) +...
-        (8*alpha^2 * diffB1(row-1) * diffB3(row-1) + 6*alpha^2 * diffB2(row-1)^2)/(1 - 2*alpha*diffB0(row-1))^2 +...
-        alpha/(1 - 2*alpha*diffB0(row-1)) * diffB4(row-1);
+    % 4th order - adjusted for Q-measure
+    diffA4(row) = diffA4(row-1) + omega * diffB4(row-1) + ...
+                  alpha * lambda_term * diffB4(row-1) + ...
+                  4 * alpha * diffB1(row-1) * diffB3(row-1) + ...
+                  3 * alpha * diffB2(row-1)^2;
 end
 
 % Compute moment generating function derivatives

@@ -61,8 +61,9 @@ class OptionDataset(Dataset):
         # self.data["risk_adjusted"] = (torch.tensor(self.data["corp"].values) * torch.tensor(self.data["omega"].values)) / (torch.tensor(self.data["gamma"].values) + self.epsilon)
         self.data["time_decay"] = torch.exp(-0.05 *
                                             torch.tensor(self.data["T"].values))
-        self.data["h0"] = torch.tensor((self.data["omega"].values + self.data["alpha"].values) / (1 - self.data["beta"].values - self.data["alpha"].values * self.data["gamma"].values**2))
-        self.data["annual_vol"] = torch.tensor(np.sqrt(252.0 * self.data["h0"].values))
+        #self.data["h0"] = torch.tensor((self.data["omega"].values + self.data["alpha"].values) / (1 - self.data["beta"].values - self.data["alpha"].values * self.data["gamma"].values**2))
+        # self.data["h0"] = torch.tensor((self.data["omega"].values) / (1 - self.data["beta"].values - self.data["alpha"].values - (self.data["lambda"].values/2)))
+        # self.data["annual_vol"] = torch.tensor(np.sqrt(252.0 * self.data["h0"].values))
     def __len__(self):
         return len(self.data)
 
@@ -83,8 +84,8 @@ class OptionDataset(Dataset):
             row["alpha_beta"],
             # row["risk_adjusted"],
             row["time_decay"],
-            row["h0"],
-            row["annual_vol"]
+            # row["h0"],
+            # row["annual_vol"]
         ], dtype=torch.float32)
 
         # Concatenate base features with engineered features
@@ -143,8 +144,8 @@ def cleandataset(data):
 #                            target_scaler=dataset_train.target_scaler)
 
 
-dataset_train, dataset_test = train_test_split(
-    cleandataset(dataset_file('../data_gen/stage2.csv')))
+# dataset_train, dataset_test = train_test_split(
+#     cleandataset(dataset_file('../data_gen/Duan_Garch/stage3.csv')))
 
 # # Extract raw option prices (not scaled) for CORAL loss
 # source_prices = torch.tensor(data_train["V"].values, dtype=torch.float32).view(-1, 1)

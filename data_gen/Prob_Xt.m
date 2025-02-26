@@ -34,7 +34,6 @@ Xt = nodes_Xt(:, 1);
 m_x = X_len;
 cur_ht = nodes_ht(:, 1);
 
-q_Xt = zeros(m_x, 1);
 mu = r - 0.5 * cur_ht;
 std = sqrt(cur_ht);
 dx = Xt - X0;
@@ -173,3 +172,4 @@ for n = 1:N-1
 end
 
 end
+

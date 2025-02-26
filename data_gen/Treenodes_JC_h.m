@@ -78,9 +78,16 @@ for i=1:N
         x = linspace(mu-4*sd, mu+4*sd ,M);
         x = x(:);
     end
+    % if sum(x<0) > 0
+    %     x = linspace(nodes(1,i-1)*0.9, nodes(end,i-1)*1.1,M);
     if sum(x<0) > 0
-        x = linspace(nodes(1,i-1)*0.9, nodes(end,i-1)*1.1,M);
+        if i > 1
+            x = linspace(nodes(1,i-1)*0.9, nodes(end,i-1)*1.1, M);
+        else
+            x = linspace(mu-4*sd, mu+4*sd, M); % Default range for the first iteration
+        end
     end
+    
     nodes(:,i)=sort(x); %generate the i-th column of the underlying asset matrix
     
 end

@@ -22,7 +22,6 @@ S = zeros(N+1, M);
 ht = zeros(N+1, M);
 
 % Initial variance (long-run variance under Duan's specification)
-% todo!!!
 h0 = omega/(1-alpha-beta);
 
 % Initialize first values

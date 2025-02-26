@@ -1,0 +1,62 @@
+digraph G {
+    rankdir=LR;
+    compound=true;
+
+    // Define nodes FIRST
+    A1 [label="r, T, m, θ"];
+    B1 [label="S, h0"];
+    C1 [label="S, r, T, m, θ, ζ\n----------------------\nV(model)"];
+    D1 [label="American Options ANN"];
+    E1 [label="V(ann)"];
+    F1 [label="S, V(ann)\n----------------------\nθ"];
+    G1 [label="Joint Calibration CaNN"];
+    I1 [label="θ(ann)"];
+
+    // Then create subgraphs and place nodes inside
+    subgraph cluster_Step1 {
+        label="Step 1: Monte Carlo Simulation\nunder Garch Model";
+        style=filled;
+        fillcolor=lightblue;
+        A1 -> B1;
+    }
+
+    subgraph cluster_Step2 {
+        label="Step 2: Willow Tree Method";
+        style=filled;
+        fillcolor=lightgreen;
+        C1;
+    }
+
+    subgraph cluster_Step3 {
+        label="Step 3: Forward Pass";
+        style=filled;
+        fillcolor=lightyellow;
+        D1 -> E1;
+    }
+
+    subgraph cluster_Step4 {
+        label="Step 4: Backward Pass";
+        style=filled;
+        fillcolor=lightcoral;
+        F1;
+    }
+
+    subgraph cluster_Step5 {
+        label="Step 5: Joint Calibration CaNN";
+        style=filled;
+        fillcolor=lightgrey;
+        G1 -> I1;
+    }
+
+    // Invisible edges for layout (adjust positions as needed)
+    B1 -> C1 [style=invis];
+    E1 -> F1 [style=invis];
+
+    // Actual connections
+    B1 -> C1;
+    E1 -> F1;
+
+    // Style start and end nodes
+    A1 [style=filled, fillcolor=lightpink];
+    I1 [style=filled, fillcolor=lightcyan];
+}
