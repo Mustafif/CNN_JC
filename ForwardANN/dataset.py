@@ -2,23 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MinMaxScaler
-import numpy as np
 import sklearn.model_selection as sklearn
-
-
-def coral(source, target):
-    """
-    Perform CORAL loss computation between source and target feature distributions.
-    """
-    d = source.size(1)
-    source_covar = torch.mm((source - source.mean(0)).T,
-                            (source - source.mean(0))) / (len(source) - 1)
-    target_covar = torch.mm((target - target.mean(0)).T,
-                            (target - target.mean(0))) / (len(target) - 1)
-    loss = torch.norm(source_covar - target_covar, p='fro') / (4 * d * d)
-    return loss
-
-
 scaler = MinMaxScaler(feature_range=(0, 1))
 
 

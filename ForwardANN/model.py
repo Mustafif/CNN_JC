@@ -7,13 +7,14 @@ class CaNNModel(nn.Module):
     def __init__(self, input_features=16, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
         super().__init__()
         activation = nn.Mish()
+        ln = nn.RMSNorm(hidden_size)
         # Create list of layers
         layers = []
 
         # Input layer
         layers.extend([
             nn.Linear(input_features, hidden_size),
-            nn.LayerNorm(hidden_size),
+            ln,
             activation,
         ])
 
@@ -21,7 +22,7 @@ class CaNNModel(nn.Module):
         for _ in range(num_hidden_layers):
             layers.extend([
                 nn.Linear(hidden_size, hidden_size),
-                nn.LayerNorm(hidden_size),
+                ln,
                 activation,
                 nn.Dropout(dropout_rate)
             ])

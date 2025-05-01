@@ -56,8 +56,6 @@ def train_model(model: torch.nn.Module, train_loader, val_loader, criterion, opt
     #         scheduler.step()
     #         train_loss += loss.item()
     # Initialize GradScaler
-    scaler = torch.amp.GradScaler()
-
     for epoch in range(epochs):
         model.train()
         train_loss = 0
@@ -66,19 +64,13 @@ def train_model(model: torch.nn.Module, train_loader, val_loader, criterion, opt
             optimizer.zero_grad()
 
             # Mixed Precision Context
-            with torch.amp.autocast(device_type="cuda"):  # Automatically uses FP16 precision where applicable
-                output = model(batch_X.float())
-                target = batch_y.float().view_as(output)
-                loss = criterion(output, target)
-
-            # Scales the loss and performs the backward pass
-            scaler.scale(loss).backward()
-
-            # Scales the gradients and steps the optimizer
-            scaler.step(optimizer)
-
-            # Updates the scaler to the next step
-            scaler.update()
+            # with torch.amp.autocast(device_type="cuda"):  # Automatically uses FP16 precision where applicable
+            output = model(batch_X.float())
+            target = batch_y.float().view_as(output)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
 
             train_loss += loss.item()
 
@@ -183,12 +175,12 @@ def main(dataset_train, dataset_test, name):
     #model = torch.compile(model)
     criterion = nn.HuberLoss()
 
-    optimizer = torch.optim.AdamW(
+    optimizer = torch.optim.SGD(
         model.parameters(),
         lr=lr,
         weight_decay=weight_decay,  # Increased weight decay for stronger L2 regularization
-        betas=(0.9, 0.999),
-        eps=1e-8
+        # betas=(0.9, 0.999),
+        # eps=1e-8
     )
     # Training
     trained_model, tl, vl = train_model(model, train_loader, val_loader, criterion, optimizer, device, epochs=epochs)
@@ -334,15 +326,15 @@ class DS:
 
 if __name__ == '__main__':
     datasets = [
-        DS("train_dataset.csv", "test_dataset.csv", "stage1_HN"),
-        DS("../data_gen/stage1b.csv", None, "stage1b_HN"),
-        DS("../data_gen/stage2.csv", None, "stage2_HN"),
-        DS("../data_gen/stage3.csv", None, "stage3_HN"),
-        DS("../data_gen/Duan_Garch/stage3.csv", None, "stage3_Duan"),
-        DS("../data_gen/GJR_Garch/stage3_gjr.csv", None, "stage3_GJR"),
-        DS("../data_gen/Duan_Garch/stage1b.csv", None, "stage1b_Duan"),
-        DS("../data_gen/Duan_Garch/stage2.csv", None, "stage2_Duan"),
-        DS("../data_gen/GJR_Garch/stage1b.csv", None, "stage1b_GJR"),
+        # DS("train_dataset.csv", "test_dataset.csv", "stage1_HN"),
+        # DS("../data_gen/stage1b.csv", None, "stage1b_HN"),
+        # DS("../data_gen/stage2.csv", None, "stage2_HN"),
+        # DS("../data_gen/stage3.csv", None, "stage3_HN"),
+        # DS("../data_gen/Duan_Garch/stage3.csv", None, "stage3_Duan"),
+        # DS("../data_gen/GJR_Garch/stage3_gjr.csv", None, "stage3_GJR"),
+        # DS("../data_gen/Duan_Garch/stage1b.csv", None, "stage1b_Duan"),
+        # DS("../data_gen/Duan_Garch/stage2.csv", None, "stage2_Duan"),
+        # DS("../data_gen/GJR_Garch/stage1b.csv", None, "stage1b_GJR"),
         DS("../data_gen/GJR_Garch/stage2.csv", None, "stage2_GJR")
     ]
     for dataset in datasets:
