@@ -11,10 +11,9 @@ class OptionDataset(Dataset):
         self.data = dataframe
         self.is_train = is_train
         self.base_features = ["S0", "m", "r", "T", "corp",
-                              "alpha", "beta", "omega", "gamma", "lambda"]
+                              "alpha", "beta", "omega", "gamma", "lambda", "V"]
         self.target_scaler = scaler
-        if is_train:
-            self.target_scaler.fit(self.data[["V"]])
+        self.target_scaler.fit(self.data[["impl"]])
 
         # Precompute constant features for faster access later
         self.epsilon = 1e-6  # To avoid division by zero in calculations
@@ -76,8 +75,8 @@ class OptionDataset(Dataset):
         X = torch.cat([base_features, engineered_features])
 
         # Scale target variable
-        target_value = row["V"]
-        target_df = pd.DataFrame([[target_value]], columns=["V"])
+        target_value = row["impl"]
+        target_df = pd.DataFrame([[target_value]], columns=["impl"])
         scaled_target = self.target_scaler.transform(target_df).flatten()
         Y = torch.tensor(scaled_target, dtype=torch.float32)
 
@@ -117,7 +116,8 @@ def dataset_file(filename):
 
 
 def cleandataset(data):
-    return data[data['V'] > 0.5].reset_index(drop=True)
+    return data
+    # return data[data['V'] > 0.5].reset_index(drop=True)
 
 # Load and prepare datasets
 # data_train = cleandataset(dataset_file('train_dataset.csv'))

@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.utils import spectral_norm as SpectralNorm
 import torch.futures
 class CaNNModel(nn.Module):
-    def __init__(self, input_features=16, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
+    def __init__(self, input_features=17, hidden_size=200, dropout_rate=0.0, num_hidden_layers=6):
         super().__init__()
         activation = nn.Mish()
-        ln = nn.RMSNorm(hidden_size)
+        ln = nn.LayerNorm(hidden_size)
         # Create list of layers
         layers = []
 
