@@ -22,24 +22,33 @@ k = size(K,1);
 z = zq(m,gamma);
 imp_vol = zeros(k,n);
 for i = 1:n  % each maturity
-    [P,q]=gen_PoWiner(T(i),N,z);
+    T_i = T(i);  % Extract current maturity as scalar
+    [P,q]=gen_PoWiner(T_i,N,z);
     for j = 1:k
         V0 = 10000;
         it = 0;
         a = 0;
         b = 1;
         sigma = (a+b)/2;
-        while abs(V0-V(j,i)) >tol && it < itmax
-            Xnodes = nodes_Winer(T,N,z,r, sigma);
+        
+        % Store target price for clarity
+        target_price = V(j,i);
+        
+        while abs(V0-target_price) > tol && it < itmax
+            Xnodes = nodes_Winer(T_i,N,z,r,sigma);
             nodes = S0.*exp(Xnodes);
-            V0 =American(nodes,P,q,r,T(i),S0,K(j,i),index);
-            if V0>V
+            
+            % Price American option with current tree
+            V0 = American(nodes,P,q,r,T_i,S0,K(j,i),index);
+            
+            % Update bisection bounds
+            if V0 > target_price
                 b = sigma;
             else
                 a = sigma;
             end
             sigma = (a+b)/2;
-            it = it +1;
+            it = it + 1;
         end
         imp_vol(j,i) = sigma;
     end
