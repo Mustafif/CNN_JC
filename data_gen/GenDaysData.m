@@ -47,7 +47,7 @@ function dataset = GenDaysData(max_day, day_num, r, T, m, alpha, beta, omega, ga
     % Generate dataset for each maturity and moneyness
     for i = 1:T_len
         for j = 1:m_len
-            K = m(j) * S0; % Strike price
+            K = m(j) * S0  + 0.01*S0*i*j; % Strike price
 
             % Calculate call and put option values
             [V_C, ~] = datagen2(t(i), r, S0, h0, K, alpha, beta, omega, gamma, lambda, 1); % Call
