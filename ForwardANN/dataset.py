@@ -13,7 +13,7 @@ class OptionDataset(Dataset):
         self.base_features = ["S0", "m", "r", "T", "corp",
                               "alpha", "beta", "omega", "gamma", "lambda", "V"]
         self.target_scaler = scaler
-        self.target_scaler.fit(self.data[["impl"]])
+        self.target_scaler.fit(self.data[["sigma"]])
 
         # Precompute constant features for faster access later
         self.epsilon = 1e-6  # To avoid division by zero in calculations
@@ -75,8 +75,8 @@ class OptionDataset(Dataset):
         X = torch.cat([base_features, engineered_features])
 
         # Scale target variable
-        target_value = row["impl"]
-        target_df = pd.DataFrame([[target_value]], columns=["impl"])
+        target_value = row["sigma"]
+        target_df = pd.DataFrame([[target_value]], columns=["sigma"])
         scaled_target = self.target_scaler.transform(target_df).flatten()
         Y = torch.tensor(scaled_target, dtype=torch.float32)
 

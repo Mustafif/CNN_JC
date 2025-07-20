@@ -335,7 +335,7 @@ if __name__ == '__main__':
         # DS("../data_gen/Duan_Garch/stage1b.csv", None, "stage1b_Duan"),
         # DS("../data_gen/Duan_Garch/stage2.csv", None, "stage2_Duan"),
         # DS("../data_gen/GJR_Garch/stage1b.csv", None, "stage1b_GJR"),
-        DS("stage2_both.csv", None, "stage2_both")
+        DS("impl_demo_improved.csv", None, "impl")
     ]
     for dataset in datasets:
         ds_train, ds_test = dataset.datasets()
