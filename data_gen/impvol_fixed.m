@@ -33,9 +33,9 @@ imp_vol = zeros(k, n);
 V0 = zeros(k, n);
 it = zeros(k, n);
 
-% Improved bounds
+% Fixed bounds - no dynamic expansion
 sigma_min = 0.001;  % 0.1% minimum volatility
-sigma_max = 3.0;    % 300% maximum volatility
+sigma_max = 3.0;    % 300% maximum volatility (increased from 1.0)
 
 fprintf('Starting implied volatility calculation...\n');
 fprintf('Options to process: %d\n', k*n);
@@ -82,7 +82,7 @@ for i = 1:n
         % Ensure guess is within bounds
         initial_guess = max(sigma_min, min(sigma_max, initial_guess));
 
-        % Initialize bisection parameters
+        % Initialize bisection parameters with consistent bounds
         sigma_low = sigma_min;
         sigma_high = sigma_max;
 
@@ -97,27 +97,23 @@ for i = 1:n
         nodes = S0 .* exp(Xnodes);
         price_high = American(nodes, P, q, r, T_i, S0, K_curr, index);
 
-        % Check if target is within bounds
+        % Check if target is within bounds - no dynamic expansion
         if target_price < price_low
             % Target too low, use minimum volatility
             imp_vol(j, i) = sigma_low;
             V0(j, i) = price_low;
             it(j, i) = 0;
+            fprintf('Warning: Target price %.4f below minimum achievable %.4f for K=%.2f, T=%.3f\n', ...
+                    target_price, price_low, K_curr, T_i);
             continue;
         elseif target_price > price_high
-            % Target too high, expand upper bound
-            sigma_high = sigma_max * 2;  % Try expanding
-            Xnodes = nodes_Winer(T_i, N, z, r, sigma_high);
-            nodes = S0 .* exp(Xnodes);
-            price_high = American(nodes, P, q, r, T_i, S0, K_curr, index);
-
-            if target_price > price_high
-                % Still too high, use maximum
-                imp_vol(j, i) = sigma_high;
-                V0(j, i) = price_high;
-                it(j, i) = 0;
-                continue;
-            end
+            % Target too high, use maximum volatility
+            imp_vol(j, i) = sigma_high;
+            V0(j, i) = price_high;
+            it(j, i) = 0;
+            fprintf('Warning: Target price %.4f above maximum achievable %.4f for K=%.2f, T=%.3f\n', ...
+                    target_price, price_high, K_curr, T_i);
+            continue;
         end
 
         % Start with initial guess
@@ -173,7 +169,7 @@ for i = 1:n
     end
 end
 
-% Display summary statistics
+% Display summary statistics with consistent bounds
 total_options = k * n;
 converged = (abs(V0(:) - V(:)) <= tol);
 num_converged = sum(converged);
@@ -186,14 +182,14 @@ fprintf('  Failed: %d (%.1f%%)\n', total_options-num_converged, 100*(total_optio
 fprintf('  Average iterations: %.1f\n', avg_iterations);
 fprintf('  Volatility range: [%.4f, %.4f]\n', min(imp_vol(:)), max(imp_vol(:)));
 
-% Check for boundary issues
+% Check for boundary issues with consistent bounds
 boundary_low = sum(imp_vol(:) <= sigma_min + 0.001);
-boundary_high = sum(imp_vol(:) >= sigma_max - 0.001);
+boundary_high = sum(imp_vol(:) >= sigma_max - 0.01);  % Adjusted threshold for higher max
 if boundary_low > 0
-    fprintf('  Warning: %d options hit lower bound\n', boundary_low);
+    fprintf('  Warning: %d options hit lower bound (%.1f%%)\n', boundary_low, 100*boundary_low/total_options);
 end
 if boundary_high > 0
-    fprintf('  Warning: %d options hit upper bound\n', boundary_high);
+    fprintf('  Warning: %d options hit upper bound (%.1f%%)\n', boundary_high, 100*boundary_high/total_options);
 end
 
 end

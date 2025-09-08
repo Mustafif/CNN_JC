@@ -1,7 +1,19 @@
 {
-  "lr": 0.004811136061294915,
-  "weight_decay": 6.093944068135973e-6,
-  "batch_size": 32,
-  "epochs": 100,
-  "dropout_rate": 0.0
+  "lr": 0.001,
+  "weight_decay": 5e-5,
+  "batch_size": 64,
+  "epochs": 300,
+  "dropout_rate": 0.15,
+  "use_ensemble": false,
+  "patience": 30,
+  "warmup_epochs": 15,
+  "min_lr": 1e-6,
+  "hidden_size": 256,
+  "num_hidden_layers": 8,
+  "gradient_clip_val": 0.5,
+  "use_label_smoothing": false,
+  "label_smoothing_factor": 0.1,
+  "use_cosine_annealing": true,
+  "T_max": 100,
+  "eta_min": 1e-6
 }

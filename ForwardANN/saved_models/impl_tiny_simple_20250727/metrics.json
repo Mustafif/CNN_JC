@@ -1,0 +1,10 @@
+{
+    "model_config": {
+        "hidden_size": 32,
+        "dropout_rate": 0.1,
+        "lr": 0.001,
+        "name": "tiny"
+    },
+    "total_parameters": 1025,
+    "in_sample": {
+        "MSE": 

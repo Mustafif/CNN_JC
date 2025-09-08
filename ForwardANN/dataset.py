@@ -17,36 +17,54 @@ class OptionDataset(Dataset):
 
         # Precompute constant features for faster access later
         self.epsilon = 1e-6  # To avoid division by zero in calculations
+
+        # Basic derived features
         self.data["strike"] = self.data["S0"] * self.data["m"]
-        # self.data["time_value"] = self.data["r"] * self.data["T"]
 
-        # # Correct volatility measure using standard deviation of returns
-        # self.data["returns"] = self.data["S0"].pct_change()  # Simple return calculation (percentage change)
+        # Advanced moneyness features
+        self.data["log_moneyness"] = torch.log(torch.tensor(self.data["m"].values))
+        self.data["moneyness_squared"] = torch.tensor(self.data["m"].values) ** 2
+        self.data["moneyness_centered"] = torch.tensor(self.data["m"].values) - 1.0
+        self.data["atm_indicator"] = torch.exp(-10 * (torch.tensor(self.data["m"].values) - 1.0) ** 2)
 
-        # # Convert to numpy ndarray and then to tensor
-        # rolling_std = self.data["returns"].rolling(window=30).std().values  # numpy ndarray
-        # annualized_volatility = torch.tensor(rolling_std) * torch.sqrt(torch.tensor(252.0))  # Annualized volatility (assuming 252 trading days)
-        # self.data["volatility_measure"] = annualized_volatility
+        # Time-related features
+        self.data["sqrt_T"] = torch.sqrt(torch.tensor(self.data["T"].values) + self.epsilon)
+        self.data["log_T"] = torch.log(torch.tensor(self.data["T"].values) + self.epsilon)
+        self.data["inv_T"] = 1 / (torch.tensor(self.data["T"].values) + self.epsilon)
+        self.data["time_decay"] = torch.exp(-torch.tensor(self.data["T"].values))
 
-        # # Apply epsilon to avoid division by zero
-        # self.data["volatility_measure"] = self.data["volatility_measure"].fillna(self.epsilon)
+        # GARCH-related features
+        self.data["log_gamma"] = torch.log(torch.tensor(self.data["gamma"].values) + self.epsilon)
+        self.data["sqrt_omega"] = torch.sqrt(torch.tensor(self.data["omega"].values) + self.epsilon)
+        self.data["log_omega"] = torch.log(torch.tensor(self.data["omega"].values) + self.epsilon)
+        self.data["alpha_beta"] = torch.tensor(self.data["alpha"].values) * torch.tensor(self.data["beta"].values)
+        self.data["alpha_gamma"] = torch.tensor(self.data["alpha"].values) * torch.tensor(self.data["gamma"].values)
+        self.data["beta_squared"] = torch.tensor(self.data["beta"].values) ** 2
 
-        # Convert Series to Tensor for operations like log and sqrt
-        self.data["log_gamma"] = torch.log(torch.tensor(
-            self.data["gamma"].values) + self.epsilon)
-        self.data["log_m"] = torch.log(torch.tensor(self.data["m"].values))
-        self.data["sqrt_omega"] = torch.sqrt(
-            torch.tensor(self.data["omega"].values) + self.epsilon)
-        self.data["inv_T"] = 1 / \
-            (torch.tensor(self.data["T"].values) + self.epsilon)
-        self.data["alpha_beta"] = torch.tensor(
-            self.data["alpha"].values) * torch.tensor(self.data["beta"].values)
-        # self.data["risk_adjusted"] = (torch.tensor(self.data["corp"].values) * torch.tensor(self.data["omega"].values)) / (torch.tensor(self.data["gamma"].values) + self.epsilon)
-        self.data["time_decay"] = torch.exp(-0.05 *
-                                            torch.tensor(self.data["T"].values))
-        #self.data["h0"] = torch.tensor((self.data["omega"].values + self.data["alpha"].values) / (1 - self.data["beta"].values - self.data["alpha"].values * self.data["gamma"].values**2))
-        # self.data["h0"] = torch.tensor((self.data["omega"].values) / (1 - self.data["beta"].values - self.data["alpha"].values - (self.data["lambda"].values/2)))
-        # self.data["annual_vol"] = torch.tensor(np.sqrt(252.0 * self.data["h0"].values))
+        # Volatility persistence and regime features
+        persistence = torch.tensor(self.data["alpha"].values) + torch.tensor(self.data["beta"].values)
+        self.data["persistence"] = persistence
+        self.data["mean_reversion"] = 1.0 - persistence
+        self.data["unconditional_vol"] = torch.sqrt(torch.tensor(self.data["omega"].values) /
+                                                   (1.0 - persistence + self.epsilon))
+
+        # Risk and return features
+        self.data["risk_free_T"] = torch.tensor(self.data["r"].values) * torch.tensor(self.data["T"].values)
+        self.data["lambda_scaled"] = torch.tensor(self.data["lambda"].values) * torch.sqrt(torch.tensor(self.data["T"].values))
+
+        # Interaction features for volatility modeling
+        self.data["m_T_interaction"] = torch.tensor(self.data["m"].values) * torch.tensor(self.data["T"].values)
+        self.data["vol_skew_proxy"] = torch.tensor(self.data["gamma"].values) * torch.tensor(self.data["lambda"].values)
+
+        # Option value relative features
+        self.data["value_ratio"] = torch.tensor(self.data["V"].values) / (torch.tensor(self.data["S0"].values) + self.epsilon)
+        self.data["log_value"] = torch.log(torch.tensor(self.data["V"].values) + self.epsilon)
+
+        # Put-call indicator and its interactions
+        corp_tensor = torch.tensor(self.data["corp"].values)
+        self.data["is_call"] = (corp_tensor + 1) / 2  # Convert -1,1 to 0,1
+        self.data["corp_m_interaction"] = corp_tensor * torch.tensor(self.data["m"].values)
+        self.data["corp_T_interaction"] = corp_tensor * torch.tensor(self.data["T"].values)
     def __len__(self):
         return len(self.data)
 
@@ -59,16 +77,32 @@ class OptionDataset(Dataset):
         # Extract precomputed engineered features
         engineered_features = torch.tensor([
             row["strike"],
-            # row["time_value"],
-            # row["volatility_measure"],  # Using the corrected volatility measure
+            row["log_moneyness"],
+            row["moneyness_squared"],
+            row["moneyness_centered"],
+            row["atm_indicator"],
+            row["sqrt_T"],
+            row["log_T"],
+            row["inv_T"],
+            row["time_decay"],
             row["log_gamma"],
             row["sqrt_omega"],
-            row["inv_T"],
+            row["log_omega"],
             row["alpha_beta"],
-            # row["risk_adjusted"],
-            row["time_decay"],
-            # row["h0"],
-            # row["annual_vol"]
+            row["alpha_gamma"],
+            row["beta_squared"],
+            row["persistence"],
+            row["mean_reversion"],
+            row["unconditional_vol"],
+            row["risk_free_T"],
+            row["lambda_scaled"],
+            row["m_T_interaction"],
+            row["vol_skew_proxy"],
+            row["value_ratio"],
+            row["log_value"],
+            row["is_call"],
+            row["corp_m_interaction"],
+            row["corp_T_interaction"]
         ], dtype=torch.float32)
 
         # Concatenate base features with engineered features

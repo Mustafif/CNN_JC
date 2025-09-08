@@ -40,7 +40,7 @@ fprintf('Generating Heston-Nandi GARCH paths...\n');
 [S, h0] = mcHN(M, N, S0, Z, r, omega, alpha, beta, gamma, lambda);
 
 % Contract timing
-day_per_contract = 5;
+day_per_contract = 100;
 day = 1;
 S0 = S(end + (-day_per_contract + day), :);
 t = T - (day - 1);
@@ -56,7 +56,7 @@ T_len = length(T);
 m_len = length(m);
 
 % Enhanced dataset with additional metrics
-dataset = zeros(15, T_len * m_len * 2);  % Expanded for more metrics
+dataset = zeros(12, T_len * m_len * 2);  % Expanded for more metrics
 
 fprintf('\nBuilding Willow trees for option pricing...\n');
 fprintf('Parameters: S0=%.2f, h0=%.2e\n', S0, h0);
@@ -212,9 +212,9 @@ for i = 1:T_len
                 lambda;               % 10: GARCH lambda
                 impl_c;               % 11: Implied volatility
                 V_C;                  % 12: Option value
-                conv_c;               % 13: Convergence flag
-                it_c;                 % 14: Iterations used
-                pcp_error             % 15: Put-call parity error
+                % conv_c;               % 13: Convergence flag
+                % it_c;                 % 14: Iterations used
+                % pcp_error             % 15: Put-call parity error
             ];
             idx = idx + 1;
 
@@ -232,9 +232,9 @@ for i = 1:T_len
                 lambda;               % 10: GARCH lambda
                 impl_p;               % 11: Implied volatility
                 V_P;                  % 12: Option value
-                conv_p;               % 13: Convergence flag
-                it_p;                 % 14: Iterations used
-                pcp_error             % 15: Put-call parity error
+                % conv_p;               % 13: Convergence flag
+                % it_p;                 % 14: Iterations used
+                % pcp_error             % 15: Put-call parity error
             ];
             idx = idx + 1;
 
@@ -244,7 +244,7 @@ for i = 1:T_len
 
             % Store error placeholders
             for k = 1:2  % Call and put
-                dataset(:, idx) = [S0; K_strike/S0; r; t(i); (-1)^k; alpha; beta; omega; gamma; lambda; 0.2; 0; 0; 0; 999];
+                dataset(:, idx) = [S0; K_strike/S0; r; t(i); (-1)^k; alpha; beta; omega; gamma; lambda; 0.2; 0];
                 idx = idx + 1;
             end
         end
@@ -252,84 +252,84 @@ for i = 1:T_len
 end
 
 % Save the enhanced dataset
-headers = {'S0', 'Moneyness', 'r', 'T', 'CallPut', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'IV', 'Value', 'Converged', 'Iterations', 'PCP_Error'}';
+headers = {'S0', 'Moneyness', 'r', 'T', 'CallPut', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'sigma', 'V'}';
 filename = 'impl_demo_improved.csv';
 dataset_enhanced = [headers'; num2cell(dataset')];
 writecell(dataset_enhanced, filename);
 
-fprintf('\n=================================================================\n');
-fprintf('                    PROCESSING COMPLETE\n');
-fprintf('=================================================================\n');
-
-% Comprehensive summary statistics
-call_data = dataset(:, dataset(5,:) == 1);
-put_data = dataset(:, dataset(5,:) == -1);
-
-fprintf('\nDATASET SUMMARY:\n');
-fprintf('  Total options: %d\n', size(dataset, 2));
-fprintf('  Calls: %d, Puts: %d\n', size(call_data, 2), size(put_data, 2));
-fprintf('  Enhanced dataset saved as: %s\n', filename);
-
-fprintf('\nSOLVER PERFORMANCE:\n');
-fprintf('  Pricing errors: %d (%.1f%%)\n', pricing_errors, 100*pricing_errors/total_options);
-fprintf('  Solver failures: %d (%.1f%%)\n', solver_failures, 100*solver_failures/total_options);
-fprintf('  Boundary issues: %d (%.1f%%)\n', boundary_issues, 100*boundary_issues/total_options);
-
-% Convergence statistics
-total_converged = sum(dataset(13,:));
-fprintf('  Overall convergence: %d/%d (%.1f%%)\n', total_converged, size(dataset,2), 100*total_converged/size(dataset,2));
-
-% Implied volatility statistics
-all_ivs = dataset(11,:);
-call_ivs = call_data(11,:);
-put_ivs = put_data(11,:);
-
-fprintf('\nIMPLIED VOLATILITY ANALYSIS:\n');
-fprintf('  Overall range: [%.4f, %.4f] (%.1f%% - %.1f%% annualized)\n', ...
-        min(all_ivs), max(all_ivs), min(all_ivs)*sqrt(252)*100, max(all_ivs)*sqrt(252)*100);
-
-fprintf('  Calls:  Mean=%.4f (%.1f%%), Range=[%.4f, %.4f]\n', ...
-        mean(call_ivs), mean(call_ivs)*sqrt(252)*100, min(call_ivs), max(call_ivs));
-fprintf('  Puts:   Mean=%.4f (%.1f%%), Range=[%.4f, %.4f]\n', ...
-        mean(put_ivs), mean(put_ivs)*sqrt(252)*100, min(put_ivs), max(put_ivs));
-fprintf('  IV Spread (Call-Put): %.4f (%.1f%% annualized)\n', ...
-        mean(call_ivs) - mean(put_ivs), (mean(call_ivs) - mean(put_ivs))*sqrt(252)*100);
-
-% Put-call parity analysis
-pcp_errors = dataset(15,:);
-large_pcp_violations = sum(pcp_errors > 0.01);
-fprintf('\nPUT-CALL PARITY:\n');
-fprintf('  Mean PCP error: %.4f\n', mean(pcp_errors));
-fprintf('  Max PCP error: %.4f\n', max(pcp_errors));
-fprintf('  Large violations (>0.01): %d (%.1f%%)\n', large_pcp_violations, 100*large_pcp_violations/size(dataset,2));
-
-% Quality assessment
-fprintf('\nQUALITY ASSESSMENT:\n');
-boundary_calls = sum(call_ivs <= 0.005 | call_ivs >= 2.95);
-boundary_puts = sum(put_ivs <= 0.005 | put_ivs >= 2.95);
-fprintf('  Calls at boundaries: %d/%d (%.1f%%)\n', boundary_calls, length(call_ivs), 100*boundary_calls/length(call_ivs));
-fprintf('  Puts at boundaries: %d/%d (%.1f%%)\n', boundary_puts, length(put_ivs), 100*boundary_puts/length(put_ivs));
-
-realistic_spread = abs(mean(call_ivs) - mean(put_ivs)) < 0.1;  % Less than 10% spread
-fprintf('  Realistic IV spread: %s\n', realistic_spread * 'Yes' + (1-realistic_spread) * 'No');
-
-fprintf('\n=================================================================\n');
-if realistic_spread && total_converged/size(dataset,2) > 0.9 && boundary_calls + boundary_puts < size(dataset,2)*0.1
-    fprintf('SUCCESS: Improved solver significantly reduced boundary issues!\n');
-else
-    fprintf('PARTIAL SUCCESS: Further improvements may be needed.\n');
-end
-fprintf('=================================================================\n');
-
-fprintf('\nRecommendations for further improvement:\n');
-if boundary_calls + boundary_puts > size(dataset,2)*0.1
-    fprintf('- Consider further expanding volatility bounds\n');
-end
-if large_pcp_violations > size(dataset,2)*0.1
-    fprintf('- Investigate tree construction accuracy\n');
-end
-if total_converged/size(dataset,2) < 0.95
-    fprintf('- Increase maximum iterations or tighten tolerance\n');
-end
-
-fprintf('\nAnalysis complete. Enhanced dataset available in %s\n', filename);
+% fprintf('\n=================================================================\n');
+% fprintf('                    PROCESSING COMPLETE\n');
+% fprintf('=================================================================\n');
+% 
+% % Comprehensive summary statistics
+% call_data = dataset(:, dataset(5,:) == 1);
+% put_data = dataset(:, dataset(5,:) == -1);
+% 
+% fprintf('\nDATASET SUMMARY:\n');
+% fprintf('  Total options: %d\n', size(dataset, 2));
+% fprintf('  Calls: %d, Puts: %d\n', size(call_data, 2), size(put_data, 2));
+% fprintf('  Enhanced dataset saved as: %s\n', filename);
+% 
+% fprintf('\nSOLVER PERFORMANCE:\n');
+% fprintf('  Pricing errors: %d (%.1f%%)\n', pricing_errors, 100*pricing_errors/total_options);
+% fprintf('  Solver failures: %d (%.1f%%)\n', solver_failures, 100*solver_failures/total_options);
+% fprintf('  Boundary issues: %d (%.1f%%)\n', boundary_issues, 100*boundary_issues/total_options);
+% 
+% % Convergence statistics
+% total_converged = sum(dataset(13,:));
+% fprintf('  Overall convergence: %d/%d (%.1f%%)\n', total_converged, size(dataset,2), 100*total_converged/size(dataset,2));
+% 
+% % Implied volatility statistics
+% all_ivs = dataset(11,:);
+% call_ivs = call_data(11,:);
+% put_ivs = put_data(11,:);
+% 
+% fprintf('\nIMPLIED VOLATILITY ANALYSIS:\n');
+% fprintf('  Overall range: [%.4f, %.4f] (%.1f%% - %.1f%% annualized)\n', ...
+%         min(all_ivs), max(all_ivs), min(all_ivs)*sqrt(252)*100, max(all_ivs)*sqrt(252)*100);
+% 
+% fprintf('  Calls:  Mean=%.4f (%.1f%%), Range=[%.4f, %.4f]\n', ...
+%         mean(call_ivs), mean(call_ivs)*sqrt(252)*100, min(call_ivs), max(call_ivs));
+% fprintf('  Puts:   Mean=%.4f (%.1f%%), Range=[%.4f, %.4f]\n', ...
+%         mean(put_ivs), mean(put_ivs)*sqrt(252)*100, min(put_ivs), max(put_ivs));
+% fprintf('  IV Spread (Call-Put): %.4f (%.1f%% annualized)\n', ...
+%         mean(call_ivs) - mean(put_ivs), (mean(call_ivs) - mean(put_ivs))*sqrt(252)*100);
+% 
+% % Put-call parity analysis
+% pcp_errors = dataset(15,:);
+% large_pcp_violations = sum(pcp_errors > 0.01);
+% fprintf('\nPUT-CALL PARITY:\n');
+% fprintf('  Mean PCP error: %.4f\n', mean(pcp_errors));
+% fprintf('  Max PCP error: %.4f\n', max(pcp_errors));
+% fprintf('  Large violations (>0.01): %d (%.1f%%)\n', large_pcp_violations, 100*large_pcp_violations/size(dataset,2));
+% 
+% % Quality assessment
+% fprintf('\nQUALITY ASSESSMENT:\n');
+% boundary_calls = sum(call_ivs <= 0.005 | call_ivs >= 2.95);
+% boundary_puts = sum(put_ivs <= 0.005 | put_ivs >= 2.95);
+% fprintf('  Calls at boundaries: %d/%d (%.1f%%)\n', boundary_calls, length(call_ivs), 100*boundary_calls/length(call_ivs));
+% fprintf('  Puts at boundaries: %d/%d (%.1f%%)\n', boundary_puts, length(put_ivs), 100*boundary_puts/length(put_ivs));
+% 
+% realistic_spread = abs(mean(call_ivs) - mean(put_ivs)) < 0.1;  % Less than 10% spread
+% fprintf('  Realistic IV spread: %s\n', realistic_spread * 'Yes' + (1-realistic_spread) * 'No');
+% 
+% fprintf('\n=================================================================\n');
+% if realistic_spread && total_converged/size(dataset,2) > 0.9 && boundary_calls + boundary_puts < size(dataset,2)*0.1
+%     fprintf('SUCCESS: Improved solver significantly reduced boundary issues!\n');
+% else
+%     fprintf('PARTIAL SUCCESS: Further improvements may be needed.\n');
+% end
+% fprintf('=================================================================\n');
+% 
+% fprintf('\nRecommendations for further improvement:\n');
+% if boundary_calls + boundary_puts > size(dataset,2)*0.1
+%     fprintf('- Consider further expanding volatility bounds\n');
+% end
+% if large_pcp_violations > size(dataset,2)*0.1
+%     fprintf('- Investigate tree construction accuracy\n');
+% end
+% if total_converged/size(dataset,2) < 0.95
+%     fprintf('- Increase maximum iterations or tighten tolerance\n');
+% end
+% 
+% fprintf('\nAnalysis complete. Enhanced dataset available in %s\n', filename);
