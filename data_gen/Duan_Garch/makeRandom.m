@@ -1,13 +1,13 @@
 clear;
-T = 30/252;
+T = 70/252;
 N = 504;
 r = 0.05/252;
 M = 1;  % Keep as 1 to avoid dimension mismatch with downstream functions
 S0 = 100;
-m = 0.8;
-alpha = 3.20e-5;    % Increased ARCH parameter significantly for higher vol
-beta = 0.65;        % Decreased to maintain stationarity
-omega = 8e-6;       % Increased omega for higher long-run variance
+m = 0.9;
+alpha = 1.2e-6;    % Increased ARCH parameter significantly for higher vol
+beta = 0.8;        % Decreased to maintain stationarity
+omega = 1e-6;       % Increased omega for higher long-run variance
 gamma = 0.40;       % Increased leverage effect
 lambda = 0.45;      % Risk premium parameter
 

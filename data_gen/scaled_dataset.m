@@ -22,7 +22,7 @@ fprintf('  Estimated memory usage: %.1f MB\n', (CONTRACTS_PER_DAY * NUM_DAYS * 2
 
 %% MARKET PARAMETERS
 T = [30, 60, 90, 180, 360]./252;  % Base maturities
-N = 504;                          % Number of time steps
+N = 1260;                          % Number of time steps
 r = 0.05/252;                     % Risk-free rate (daily)
 S0 = 100;                         % Initial stock price
 K_base = 100;                     % Base strike price
@@ -165,39 +165,12 @@ for batch = 1:num_batches
                 continue;
             end
             
-            % Compute implied volatilities
-            if exist('impvol_improved', 'file') == 2
-                % Use improved solver if available
-                [impl_c, V0_c, it_c, conv_c] = impvol_improved(S_current, K_strike, T_maturity, r, V_C, 1, N, m_x, gamma_x, tol, itmax);
-                [impl_p, V0_p, it_p, conv_p] = impvol_improved(S_current, K_strike, T_maturity, r, V_P, -1, N, m_x, gamma_x, tol, itmax);
-                
-                if ~conv_c || ~conv_p
-                    solver_failures = solver_failures + 1;
-                end
-                if impl_c <= 0.002 || impl_c >= 2.99 || impl_p <= 0.002 || impl_p >= 2.99
-                    boundary_issues = boundary_issues + 1;
-                end
-                
-            else
-                % Fallback solver with improved initial guesses
-                z = zq(m_x, gamma_x);
-                [P, q] = gen_PoWiner(T_maturity, N, z);
-                
-                % Call option implied volatility
-                sigma_min = 0.001; sigma_max = 3.0;
-                init_guess_c = 0.2 + 0.1 * abs(moneyness - 1);
-                init_guess_c = max(sigma_min, min(sigma_max, init_guess_c));
-                
-                [impl_c, V0_c, it_c, conv_c] = solve_iv_bisection(S_current, K_strike, T_maturity, r, V_C, 1, ...
-                                                                  sigma_min, sigma_max, init_guess_c, tol, itmax, N, z);
-                
-                % Put option implied volatility
-                init_guess_p = 0.2 + 0.1 * abs(moneyness - 1);
-                init_guess_p = max(sigma_min, min(sigma_max, init_guess_p));
-                
-                [impl_p, V0_p, it_p, conv_p] = solve_iv_bisection(S_current, K_strike, T_maturity, r, V_P, -1, ...
-                                                                  sigma_min, sigma_max, init_guess_p, tol, itmax, N, z);
-            end
+
+            % Use improved solver if available
+            [impl_c, V0_c, it_c, conv_c] = impvol_improved(S_current, K_strike, T_maturity, r, V_C, 1, N, m_x, gamma_x, tol, itmax);
+            [impl_p, V0_p, it_p, conv_p] = impvol_improved(S_current, K_strike, T_maturity, r, V_P, -1, N, m_x, gamma_x, tol, itmax);
+
+
             
             % Store call option data
             dataset(:, dataset_idx) = [
@@ -272,6 +245,8 @@ headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lamb
 filename = sprintf('scalable_hn_dataset_%dx%d.csv', CONTRACTS_PER_DAY, NUM_DAYS);
 dataset_enhanced = [headers'; num2cell(dataset')];
 writecell(dataset_enhanced, filename);
+
+writecell(['S', num2cell(S_paths')], 'assetprices.csv');
 
 %% COMPREHENSIVE REPORTING
 fprintf('\n=================================================================\n');
