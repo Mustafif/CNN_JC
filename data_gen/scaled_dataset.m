@@ -8,8 +8,8 @@ fprintf('      SCALABLE HESTON-NANDI GARCH OPTION PRICING DEMO\n');
 fprintf('=================================================================\n\n');
 
 %% SCALING PARAMETERS - MODIFY THESE TO SCALE THE DATASET
-CONTRACTS_PER_DAY = 250;     % Number of option contracts to generate per day
-NUM_DAYS = 60;              % Number of trading days to simulate
+CONTRACTS_PER_DAY = 10;     % Number of option contracts to generate per day
+NUM_DAYS = 10;              % Number of trading days to simulate
 BATCH_SIZE = 100;           % Process options in batches to manage memory
 
 % Display scaling configuration
@@ -242,11 +242,11 @@ dataset = dataset(:, 1:dataset_idx-1);
 %% SAVE RESULTS
 fprintf('\nSaving results...\n');
 headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'sigma', 'V'}';
-filename = sprintf('scalable_hn_dataset_%dx%d.csv', CONTRACTS_PER_DAY, NUM_DAYS);
+filename = sprintf('compare/true_params.csv');
 dataset_enhanced = [headers'; num2cell(dataset')];
 writecell(dataset_enhanced, filename);
 
-writecell(['S', num2cell(S_paths')], 'assetprices.csv');
+writecell(['S', num2cell(S_paths')], 'assetprices2.csv');
 
 %% COMPREHENSIVE REPORTING
 fprintf('\n=================================================================\n');
@@ -301,38 +301,6 @@ else
     fprintf('PARTIAL SUCCESS: Some data quality issues detected.\n');
 end
 fprintf('=================================================================\n');
-
-%% HELPER FUNCTION FOR BISECTION METHOD
-function [impl_vol, V0, iterations, converged] = solve_iv_bisection(S, K, T, r, target_price, cp, ...
-                                                                   sigma_min, sigma_max, init_guess, tol, itmax, N, z)
-    % Bisection method for implied volatility
-    a = sigma_min;
-    b = sigma_max;
-    sigma = init_guess;
-    iterations = 0;
-    V0 = 0;
-    
-    while abs(V0 - target_price) > tol && iterations < itmax
-        Xnodes = nodes_Winer(T, N, z, r, sigma);
-        nodes = S .* exp(Xnodes);
-        V0 = American(nodes, gen_PoWiner(T, N, z), zq(length(z), 0.8), r, T, S, K, cp);
-        
-        if V0 > target_price
-            b = sigma;
-        else
-            a = sigma;
-        end
-        sigma = (a + b) / 2;
-        iterations = iterations + 1;
-        
-        if (b - a) < 1e-10
-            break;
-        end
-    end
-    
-    impl_vol = sigma;
-    converged = (abs(V0 - target_price) <= tol);
-end
 
 fprintf('\nScalable dataset generation complete!\n');
 fprintf('To scale further, modify CONTRACTS_PER_DAY and NUM_DAYS at the top of the script.\n');

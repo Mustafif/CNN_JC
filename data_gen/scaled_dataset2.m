@@ -8,8 +8,8 @@ fprintf('   SCALABLE HESTON-NANDI GARCH WITH VARYING PARAMETERS\n');
 fprintf('=================================================================\n\n');
 
 %% SCALING PARAMETERS - MODIFY THESE TO SCALE THE DATASET
-CONTRACTS_PER_DAY = 50;     % Number of option contracts to generate per day
-NUM_DAYS = 30;              % Number of trading days to simulate
+CONTRACTS_PER_DAY = 10;     % Number of option contracts to generate per day
+NUM_DAYS = 10;              % Number of trading days to simulate
 BATCH_SIZE = 100;           % Process options in batches to manage memory
 
 % GARCH Parameter Variation Settings
@@ -44,7 +44,7 @@ alpha_range = [1.15e-6, 1.36e-6];      % Volatility innovation parameter
 beta_range = [0.75, 0.85];       % Persistence parameter  
 omega_range = [1e-7, 1e-6];      % Long-run variance level
 gamma_range = [50, 150];         % Asymmetry parameter (leverage effect)
-lambda_range = [0.4, 0.6];      % Risk premium parameter
+lambda_range = [0.2, 0.6];      % Risk premium parameter
 
 % Generate random parameter sets with constraints
 param_sets = zeros(NUM_PARAM_SETS, 5);
@@ -308,7 +308,7 @@ dataset = dataset(:, 1:dataset_idx-1);
 %% SAVE RESULTS
 fprintf('\nSaving results...\n');
 headers = {'S0', 'm', 'r', 'T', 'corp', 'alpha', 'beta', 'omega', 'gamma', 'lambda', 'sigma', 'V'}';
-filename = sprintf('varying_garch_dataset_%dx%d_%dparams.csv', CONTRACTS_PER_DAY, NUM_DAYS, NUM_PARAM_SETS);
+filename = sprintf('varying_garch_dataset_%dx%d_%dparams_1116.csv', CONTRACTS_PER_DAY, NUM_DAYS, NUM_PARAM_SETS);
 dataset_enhanced = [headers'; num2cell(dataset')];
 writecell(dataset_enhanced, filename);
 
