@@ -36,27 +36,27 @@ maturity_range  = [0.1, 1.0];           % Maturity range (years)
 
 % TRUE (market) parameters
 true_params.name   = 'true_params';
+true_params.omega  = 1e-6;
 true_params.alpha  = 1.33e-6;
 true_params.beta   = 0.8;
-true_params.omega  = 1e-6;
 true_params.gamma  = 5;
 true_params.lambda = 0.2;
 
 % INITIAL guess parameters (PUT YOUR VALUES HERE)
 initial_params.name   = 'initial_params';
-initial_params.alpha  = 1.3599999974796925e-06;
-initial_params.beta   = 0.7000000950054118;
-initial_params.omega  = 9.296895543101507e-07;
-initial_params.gamma  = 9.173790786956534e-07;
-initial_params.lambda =0.20000000480058538;
+initial_params.omega  = 9.999997375264006e-07;
+initial_params.alpha  = 1.3599999387561602e-06;
+initial_params.beta   = 0.7000000845748264;
+initial_params.gamma  = 2.916373326045573e-06;
+initial_params.lambda =0.20000023548988383;
 
 % CALIBRATED parameters (PUT YOUR VALUES HERE)
 calibrated_params.name   = 'calibrated_params';
-calibrated_params.alpha  = 1.2277581426152762e-06;
-calibrated_params.beta   = 0.7031409936970199;
-calibrated_params.omega  = 1.1290204194358105e-07;
-calibrated_params.gamma  = 1.9180144170929299;
-calibrated_params.lambda = 0.21219586636677387;
+calibrated_params.omega  = 1.9342766107634916e-07;
+calibrated_params.alpha  = 1.2904917700861564e-06;
+calibrated_params.beta   = 0.711629085423504;
+calibrated_params.gamma  = 4.902325919475119;
+calibrated_params.lambda = 0.3896498520408494;
 
 param_sets = [true_params, initial_params, calibrated_params];
 
