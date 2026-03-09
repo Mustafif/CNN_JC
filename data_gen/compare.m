@@ -1,4 +1,4 @@
-clear all
+clear all; clc;
 % demo_scalable_3sets.m
 % Scalable version of Heston-Nandi GARCH option pricing with flexible dataset generation
 % Now handles 3 different GARCH parameter sets with the SAME randomness.
@@ -22,8 +22,8 @@ fprintf('  Estimated memory usage: %.1f MB\n', ...
     (CONTRACTS_PER_DAY * NUM_DAYS * 2 * 12 * 8) / 1e6);
 
 %% MARKET PARAMETERS
-T       = [30, 60, 90, 180, 360]./252;  % Base maturities
-N       = 1260;                         % Number of time steps
+T       = [30, 60, 90, 180]./252;  % Base maturities
+N       = 252;                         % Number of time steps
 r       = 0.05/252;                     % Risk-free rate (daily)
 S0      = 100;                          % Initial stock price
 K_base  = 100;                          % Base strike price
@@ -44,19 +44,19 @@ true_params.lambda = 0.2;
 
 % INITIAL guess parameters (PUT YOUR VALUES HERE)
 initial_params.name   = 'initial_params';
-initial_params.omega  = 9.999997375264006e-07;
-initial_params.alpha  = 1.3599999387561602e-06;
-initial_params.beta   = 0.7000000845748264;
-initial_params.gamma  = 2.916373326045573e-06;
-initial_params.lambda =0.20000023548988383;
+initial_params.omega  = 1.01702514e-07;
+initial_params.alpha  = 1.15000000e-06;
+initial_params.beta   = 3.53482404e-03;
+initial_params.gamma  = 9.26301851e+00;
+initial_params.lambda = 9.26301851e-01;
 
 % CALIBRATED parameters (PUT YOUR VALUES HERE)
 calibrated_params.name   = 'calibrated_params';
-calibrated_params.omega  = 1.9342766107634916e-07;
-calibrated_params.alpha  = 1.2904917700861564e-06;
-calibrated_params.beta   = 0.711629085423504;
-calibrated_params.gamma  = 4.902325919475119;
-calibrated_params.lambda = 0.3896498520408494;
+calibrated_params.omega  = 6.241474135503389e-06;
+calibrated_params.alpha  = 1.15e-06;
+calibrated_params.beta   = 0.925541575411115;
+calibrated_params.gamma  = 5.532631955992681;
+calibrated_params.lambda = 0.018021270355291285;
 
 param_sets = [true_params, initial_params, calibrated_params];
 
