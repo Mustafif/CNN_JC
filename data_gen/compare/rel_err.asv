@@ -1,0 +1,12 @@
+clear all; clc;
+
+folder = "set1/";
+
+init = readtable(folder + "initial_params.csv");
+calib = readtable(folder + "calibrated_params.csv");
+true_ = readtable(folder + "true_params.csv");
+
+rel_err_init = abs(init.sigma - true_.sigma) ./ true_.sigma;
+rel_err_calib = abs(calib.sigma - true_.sigma) ./ true_.sigma;
+
+T_days = calib.T * 252;
