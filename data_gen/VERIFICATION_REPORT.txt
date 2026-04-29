@@ -1,0 +1,182 @@
+╔═════════════════════════════════════════════════════════════════════════╗
+║  VERIFICATION REPORT: scaled_dataset_optimized_configurable.m          ║
+║  Tree Building Functions & Noise Application                           ║
+║  Generated: 2026-04-08                                                  ║
+╚═════════════════════════════════════════════════════════════════════════╝
+
+ISSUE #1: TREE BUILDING FUNCTIONS NOT MODEL-SPECIFIC ❌ CRITICAL
+═══════════════════════════════════════════════════════════════════════════
+
+PROBLEM:
+  File accepts 3 model types: HN, DUAN, GJR (line 55)
+  BUT ignores model_type and ONLY uses HN functions (lines 242, 250, 258)
+
+CURRENT CODE (lines 229-276):
+  parfor ps = 1:NUM_PARAM_SETS
+    [S_paths, h0_paths] = mcHN(...);                    ← ALWAYS HN
+    [nodes_ht] = TreeNodes_ht_HN(...);                  ← ALWAYS HN  
+    [nodes_Xt, ...] = TreeNodes_logSt_HN(...);          ← ALWAYS HN
+  end
+
+AVAILABLE MODEL FUNCTIONS:
+┌─────────────────────────────────────────────────────────────────────────┐
+│ HN MODEL (main folder)                                                  │
+│  mcHN(M, N, S0, Z, r, omega, alpha, beta, gamma, lambda)               │
+│  TreeNodes_ht_HN.m, TreeNodes_logSt_HN.m                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ DUAN MODEL (Duan_Garch/ folder)                                        │
+│  Duan_Garch/mcDuan.m:                                                  │
+│    (M, N, S0, Z, r, omega, alpha, beta, theta, lambda)                 │
+│  ⚠️  Parameter 'theta' NOT 'gamma'                                     │
+│  TreeNodes_ht_D.m, TreeNodes_logSt_D.m (different params)              │
+├─────────────────────────────────────────────────────────────────────────┤
+│ GJR MODEL (GJR_Garch/ folder)                                           │
+│  GJR_Garch/mcGJR.m:                                                    │
+│    (M, N, S0, Z, r, omega, alpha, beta, lambda)                        │
+│  ⚠️  NO 'gamma' or 'theta' parameter                                   │
+│  TreeNodes_ht_GJR.m, TreeNodes_logSt_GJR.m (different params)          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+WHAT'S WRONG:
+  ✗ When user selects model_type='DUAN': Code uses mcHN instead of mcDuan
+  ✗ When user selects model_type='GJR': Code uses mcHN instead of mcGJR
+  ✗ Parameter 'gamma' passed to models that don't use it
+    - DUAN expects 'theta' parameter
+    - GJR doesn't use gamma
+  ✗ Tree functions (TreeNodes_ht_HN, TreeNodes_logSt_HN) receive wrong parameters
+
+IMPACT:
+  Datasets generated with model_type='DUAN' or 'GJR' are actually using HN model
+  This invalidates any results generated with these model types
+
+
+ISSUE #2: NOISE APPLICATION ✓ CORRECT
+═══════════════════════════════════════════════════════════════════════════
+
+NOISE IS APPLIED TO PRICES, NOT IV:
+
+Sequence of operations (lines 406-423):
+  1. Line 406-407: Price options using tree
+     [V_C, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, 1);
+     [V_P, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, -1);
+
+  2. Line 414-419: Apply MULTIPLICATIVE noise to prices
+     if NOISE_LEVEL > 0
+       noise_c = 1 + NOISE_LEVEL * randn(noise_rng);
+       V_C = V_C * noise_c;           ← Noise applied to PRICE
+     end
+
+  3. Line 422-423: Calculate IV from noisy prices
+     [impl_c, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity, r, V_C, 1, N, m_x, gamma_x);
+                                                                              ↑ Uses noisy V_C
+
+Dataset saved (line 303):
+  Headers: S0, m, r, T, corp, alpha, beta, omega, gamma, lambda, sigma, V
+  - Column 11 (sigma) = Implied volatility (calculated from NOISY prices)
+  - Column 12 (V)     = NOISY option price
+
+CONCLUSION:
+  ✓ Noise applied to V_C, V_P (prices) BEFORE IV calculation
+  ✓ IV (sigma) is computed from noisy prices (not directly noised)
+  ✓ Both price (V) and IV (sigma) are affected by noise
+  ✓ Noise type: Multiplicative lognormal
+     Formula: V_noisy = V_true × (1 + NOISE × Z)  where Z ~ N(0,1)
+  ✓ Noise is independent for calls vs puts
+
+
+ISSUE #3: PARAMETER SET GENERATION IGNORES MODEL ⚠️
+═══════════════════════════════════════════════════════════════════════════
+
+Function: generate_param_sets() (lines 338-356)
+
+Problem:
+  - Accepts model_type parameter but DOESN'T USE IT
+  - Uses same baseline_gamma for ALL models
+  - GJR and Duan don't use 'gamma' in their specifications
+  - No model-specific parameter validation or tuning
+
+Current behavior:
+  baseline_omega = 1e-6;
+  baseline_alpha = 1.33e-6;
+  baseline_beta = 0.8;
+  baseline_gamma = 5.0;        ← Used for ALL models (WRONG)
+  baseline_lambda = 0.2;
+
+Impact: Lower severity than #1, but semantically incorrect
+
+
+═══════════════════════════════════════════════════════════════════════════
+SUMMARY
+═══════════════════════════════════════════════════════════════════════════
+
+✅ Noise Application:      CORRECT
+   - Applied to prices, not IV
+   - IV calculated from noisy prices
+   - Multiplicative lognormal noise: V × (1 + NOISE × Z)
+   - Independent noise for calls vs puts
+
+❌ Tree Functions:         BROKEN (CRITICAL)
+   - Only uses HN tree functions
+   - Ignores model_type parameter
+   - Results: Datasets with model_type='DUAN' or 'GJR' are invalid
+
+❌ MC Simulation:          BROKEN (CRITICAL)
+   - Only uses mcHN regardless of model_type
+   - Asset paths generated with wrong model specification
+   - Results: Prices and volatilities are incorrect
+
+⚠️  Parameter Sets:        INCOMPLETE
+   - Doesn't distinguish between model types
+   - Uses gamma for all models (some don't have gamma)
+   - Severity: Medium
+
+
+═══════════════════════════════════════════════════════════════════════════
+VERIFICATION BY MODEL TYPE
+═══════════════════════════════════════════════════════════════════════════
+
+Model Type: HN (Heston-Nandi)
+  MC Function:       mcHN (correct) ✓
+  Tree ht:          TreeNodes_ht_HN (correct) ✓
+  Tree X:           TreeNodes_logSt_HN (correct) ✓
+  Parameters:       gamma, lambda (correct) ✓
+  OVERALL:          ✓ CORRECT
+
+Model Type: DUAN
+  MC Function:       mcHN (WRONG) ✗  Should be: mcDuan
+  Tree ht:          TreeNodes_ht_HN (WRONG) ✗  Should be: TreeNodes_ht_D
+  Tree X:           TreeNodes_logSt_HN (WRONG) ✗  Should be: TreeNodes_logSt_D
+  Parameters:       gamma (WRONG) ✗  Should be: theta
+  OVERALL:          ✗ INVALID RESULTS
+
+Model Type: GJR
+  MC Function:       mcHN (WRONG) ✗  Should be: mcGJR
+  Tree ht:          TreeNodes_ht_HN (WRONG) ✗  Should be: TreeNodes_ht_GJR
+  Tree X:           TreeNodes_logSt_HN (WRONG) ✗  Should be: TreeNodes_logSt_GJR
+  Parameters:       gamma (WRONG) ✗  Should be: NOT USED
+  OVERALL:          ✗ INVALID RESULTS
+
+
+═══════════════════════════════════════════════════════════════════════════
+RECOMMENDED ACTIONS
+═══════════════════════════════════════════════════════════════════════════
+
+1. CRITICAL - Add model-specific routing in parfor loop (lines 229-276)
+   - Add switch statement on model_type
+   - Load correct MC function (mcHN, mcDuan, or mcGJR)
+   - Load correct tree functions
+   - Pass correct parameters
+
+2. CRITICAL - Fix tree function calls
+   - Duan: Use TreeNodes_ht_D instead of TreeNodes_ht_HN
+   - GJR: Use TreeNodes_ht_GJR instead of TreeNodes_ht_HN
+
+3. IMPORTANT - Map parameters correctly
+   - HN: uses gamma
+   - Duan: uses theta (NOT gamma)
+   - GJR: doesn't use gamma
+
+4. Update generate_param_sets() to handle model-specific parameters
+
+5. Add validation to ensure correct model functions are loaded
+

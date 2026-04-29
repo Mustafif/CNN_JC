@@ -1,0 +1,40 @@
+# Configuration for HN GARCH model - clean data (no noise)
+# For testing model accuracy and calibration
+
+[model]
+type = "HN"
+
+[scaling]
+contracts_per_day = 100
+num_days = 30
+batch_size = 200
+num_param_sets = 10
+
+[market]
+N = 1260
+r = 0.0001984
+S0 = 100.0
+moneyness_range = [0.8, 1.2]
+maturity_days = [30, 60, 90, 180, 360]
+
+[willow_tree]
+m_h = 6
+gamma_h = 0.6
+m_x = 30
+gamma_x = 0.8
+
+[performance]
+use_gpu = false
+num_workers = 0
+optimize_memory = false
+
+[noise]
+# No noise - perfect model data
+level = 0.0
+seed = 42
+
+[output]
+folder = ""
+filename = ""
+save_asset_prices = true
+save_logs = true

@@ -1,0 +1,33 @@
+=================================================================
+DATASET GENERATION METADATA
+=================================================================
+
+Generation timestamp: 20260330_214551
+Model: HN GARCH
+
+CONFIGURATION:
+  Contracts per day: 3
+  Number of days: 2
+  Batch size: 100
+  Parameter sets: 1
+  Moneyness range: [0.80, 1.20]
+  Maturity range: [0.10, 1.00] years
+
+MARKET PARAMETERS:
+  Initial spot price (S0): 100.00
+  Risk-free rate (r): 0.000198 (daily), 5.0000% (annual)
+  Time steps (N): 1260
+
+WILLOW TREE PARAMETERS:
+  m_h: 6
+  m_x: 30
+  gamma_h: 0.60
+  gamma_x: 0.80
+
+RESULTS:
+  Total contracts generated: 0
+  Contracts removed (V < 0.5): 0
+  Contracts removed (T = 1/252): 0
+  Contracts removed (invalid): 0
+  Final clean dataset: 0 contracts
+  Pricing errors: 12 (100.00%)

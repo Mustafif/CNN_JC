@@ -1,0 +1,251 @@
+================================================================================
+         CENTRALIZED PARAMETER COMPARISON SYSTEM - VISUAL OVERVIEW
+================================================================================
+
+                              WORKFLOW DIAGRAM
+                              ================
+
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                  1. CONFIGURATION PHASE                          │
+    │                                                                  │
+    │  User edits:  compare_config.toml                               │
+    │                                                                  │
+    │  ┌────────────────────────────────────────────────────────┐    │
+    │  │ [model]  type = "HN"                                    │    │
+    │  │                                                          │    │
+    │  │ [parameters.true]     ──┐                               │    │
+    │  │   omega, alpha, beta... │ Same randomness for all!     │    │
+    │  │                         │                               │    │
+    │  │ [parameters.initial]  ──┤                               │    │
+    │  │   omega, alpha, beta... │                               │    │
+    │  │                         │                               │    │
+    │  │ [parameters.calibrated] │                               │    │
+    │  │   omega, alpha, beta... ┘                               │    │
+    │  │                                                          │    │
+    │  │ [noise]  level = 0.0 (or 0.01, 0.05, etc.)             │    │
+    │  └────────────────────────────────────────────────────────┘    │
+    └─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                  2. GENERATION PHASE                             │
+    │                                                                  │
+    │  MATLAB:  compare_dataset('compare_config.toml')                │
+    │                                                                  │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 1: Parse TOML config (via Python)             │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 2: Generate GARCH paths with fixed seed       │        │
+    │  │         Z_master = randn(...)  ← Same for all!     │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 3: Build willow trees & price options         │        │
+    │  │                                                     │        │
+    │  │  For each parameter set (true, initial, calibrated) │       │
+    │  │    → Use SAME Z_master                              │       │
+    │  │    → Use SAME contract parameters (K, T)            │       │
+    │  │    → Generate different option prices               │       │
+    │  │    → Compute implied volatilities                   │       │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 4: Add noise (if configured)                  │        │
+    │  │         V_noisy = V_clean + noise * V_clean        │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 5: Save datasets                               │        │
+    │  │   • compare/true_params.csv                         │        │
+    │  │   • compare/initial_params.csv                      │        │
+    │  │   • compare/calibrated_params.csv                   │        │
+    │  └────────────────────────────────────────────────────┘        │
+    └─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                  3. ANALYSIS PHASE                               │
+    │                                                                  │
+    │  MATLAB:  rel_err_results()                                     │
+    │                                                                  │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 1: Load all three datasets                     │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 2: Filter outliers                             │        │
+    │  │         Remove: sigma < 0.01 or V < 0.5             │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 3: Compute relative errors                     │        │
+    │  │         RE = |sigma_est - sigma_true| / sigma_true  │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 4: Categorize by maturity & moneyness         │        │
+    │  │                                                     │        │
+    │  │    Maturity:    <30d | 30-180d | >180d            │        │
+    │  │    Moneyness:  <0.8 | 0.8-1.0 | 1.0-1.2 | >1.2    │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 5: Compute mean RE for each category          │        │
+    │  │                                                     │        │
+    │  │   Initial vs True:       3x4 matrix                │        │
+    │  │   Calibrated vs True:    3x4 matrix                │        │
+    │  │   Improvement:           3x4 matrix                │        │
+    │  └────────────────────────────────────────────────────┘        │
+    │                          │                                       │
+    │  ┌────────────────────────────────────────────────────┐        │
+    │  │ Step 6: Display & save results                      │        │
+    │  │   • Print tables to console                         │        │
+    │  │   • Save compare/rel_err_results.csv                │        │
+    │  │   • Generate heatmaps (if plot=true)                │        │
+    │  └────────────────────────────────────────────────────┘        │
+    └─────────────────────────────────────────────────────────────────┘
+
+
+                           DATA FLOW DIAGRAM
+                           =================
+
+    compare_config.toml
+           │
+           │  (TOML → JSON conversion)
+           ▼
+    Python: read_toml_config.py
+           │
+           │  (JSON output)
+           ▼
+    MATLAB: compare_dataset.m
+           │
+           ├─→ Load config
+           ├─→ Generate Z_master (fixed seed)
+           │
+           ├─→ [LOOP] For each parameter set:
+           │      │
+           │      ├─→ Generate GARCH paths (same Z_master)
+           │      ├─→ Build willow trees
+           │      ├─→ Price options (batch processing)
+           │      ├─→ Compute implied vols
+           │      ├─→ Add noise (if configured)
+           │      └─→ Save CSV file
+           │
+           └─→ Output:
+                  ├─→ compare/true_params.csv
+                  ├─→ compare/initial_params.csv
+                  └─→ compare/calibrated_params.csv
+
+           ┌──────────────────────────────┐
+           │                              │
+           ▼                              ▼
+    MATLAB: rel_err_results.m    User: Manual Analysis
+           │                              │
+           ├─→ Load all CSVs              ├─→ Load CSVs in Python/R
+           ├─→ Filter outliers            ├─→ Custom analysis
+           ├─→ Compute rel errors         ├─→ Machine learning
+           ├─→ Categorize                 └─→ Visualization
+           ├─→ Aggregate by category
+           │
+           └─→ Output:
+                  ├─→ Print tables
+                  ├─→ compare/rel_err_results.csv
+                  └─→ compare/rel_err_heatmaps.png
+
+
+                          FILE STRUCTURE
+                          ==============
+
+    data_gen/
+    │
+    ├── compare_dataset.m              ← Main generation function
+    ├── compare_config.toml            ← Configuration file
+    ├── read_toml_config.py            ← TOML parser helper
+    ├── rel_err_results.m              ← Analysis function
+    │
+    ├── test_compare_system.m          ← System test
+    ├── example_compare_usage.m        ← Usage examples
+    │
+    ├── GETTING_STARTED.md             ← Start here!
+    ├── COMPARE_README.md              ← Full documentation
+    ├── COMPARE_SYSTEM_SUMMARY.md      ← Implementation details
+    ├── COMPARE_QUICK_REFERENCE.txt    ← Quick commands
+    └── SYSTEM_OVERVIEW.txt            ← This file
+    │
+    └── compare/                        ← Output folder
+           ├── true_params.csv
+           ├── initial_params.csv
+           ├── calibrated_params.csv
+           ├── rel_err_results.csv
+           └── rel_err_heatmaps.png
+
+
+                      KEY INNOVATION
+                      ==============
+
+    OLD SYSTEM (compare.m):
+    ┌─────────────────────────────────────────┐
+    │ • Parameters hardcoded in script         │
+    │ • Manual JSON loading                    │
+    │ • No noise simulation                    │
+    │ • Single model only                      │
+    │ • Limited documentation                  │
+    └─────────────────────────────────────────┘
+
+    NEW SYSTEM (compare_dataset.m):
+    ┌─────────────────────────────────────────┐
+    │ ✓ All parameters in TOML config         │
+    │ ✓ Automatic config loading               │
+    │ ✓ Built-in noise simulation              │
+    │ ✓ Multi-model support (HN, Duan, GJR)   │
+    │ ✓ Comprehensive documentation            │
+    │ ✓ Enhanced analysis with filtering       │
+    │ ✓ Same randomness guarantee              │
+    │ ✓ Memory-efficient batch processing      │
+    └─────────────────────────────────────────┘
+
+
+                   USAGE PATTERNS
+                   ==============
+
+    Pattern 1: Quick Comparison
+    ───────────────────────────
+    compare_dataset('compare_config.toml')
+    rel_err_results()
+
+    Pattern 2: With Visualization
+    ──────────────────────────────
+    compare_dataset('compare_config.toml')
+    rel_err_results('plot', true)
+
+    Pattern 3: Noise Study
+    ──────────────────────
+    # Create 4 configs with different noise levels
+    compare_dataset('config_0pct.toml')
+    compare_dataset('config_1pct.toml')
+    compare_dataset('config_3pct.toml')
+    compare_dataset('config_5pct.toml')
+    # Analyze each
+    rel_err_results('folder', 'compare_0pct', 'plot', true)
+    rel_err_results('folder', 'compare_1pct', 'plot', true)
+    ...
+
+    Pattern 4: Model Comparison
+    ────────────────────────────
+    # Create configs for different models
+    compare_dataset('config_hn.toml')
+    compare_dataset('config_duan.toml')
+    compare_dataset('config_gjr.toml')
+    # Compare results
+
+    Pattern 5: Large-Scale Generation
+    ──────────────────────────────────
+    # Edit config: contracts_per_day=100, num_days=50
+    compare_dataset('config_large.toml')
+    # Use for ML training
+
+================================================================================
+                              END OF OVERVIEW
+================================================================================

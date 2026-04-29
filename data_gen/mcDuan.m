@@ -1,4 +1,4 @@
-function [S, h0] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, lambda)
+function [S, h0] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, theta,lambda)
 % Monte Carlo simulation for Duan's GARCH option pricing model
 %
 % Inputs:
@@ -16,24 +16,41 @@ function [S, h0] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, lambda)
 %   S - simulated stock price paths
 %   h0 - initial variance
 
-dt = 1/N;
-numPoint = N+1;
-S = zeros(N+1, M);
-ht = zeros(N+1, M);
+    % Check stationarity condition
+    if alpha + beta >= 1
+        error('Stationarity condition violated: alpha + beta must be less than 1');
+    end
 
-% Initial variance (long-run variance under Duan's specification)
-h0 = omega/(1-alpha-beta);
+    % Initialize variables
+    dt = 1/N;  % Time step size (in years)
+    numPoints = N + 1;
+    S = zeros(numPoints, M);  % Asset price matrix
+    ht = zeros(numPoints, M); % Volatility process matrix
 
-% Initialize first values
-ht(1, :) = h0;
-S(1, :) = S0;
+    % Calculate initial variance (long-run variance under Duan's specification)
+    % Note: omega is not scaled as it represents daily variance
+    h0 = omega/(1 - alpha - beta);
 
-% Simulate paths
-for i = 2:numPoint
-    ht(i, :) = omega + beta * ht(i-1, :) + alpha*(Z(i-1, :)^2*ht(i-1, :));
-    Xt = r*dt + lambda*sqrt(ht(i,:)) - 0.5*ht(i, :) + Z(i, :)*sqrt(ht(i, :));
-    
-    % Update stock prices
-    S(i,:) = S(i-1,:) * exp(Xt);
-end
+    % Set initial conditions
+    ht(1, :) = h0;
+    S(1, :) = S0;
+
+    % Main simulation loop
+    for i = 2:numPoints
+        % Update volatility (GARCH process)
+        % GARCH parameters operate on daily variance, so no dt scaling needed here
+        ht(i, :) = omega + ...                            % Constant term (daily)
+                   beta * ht(i-1, :) + ...                % GARCH effect
+                   alpha * ht(i-1, :) .* ...              % ARCH effect
+                   (Z(i-1, :) - theta - lambda).^2;       % Innovations
+        
+        % Compute log-returns
+        % Only the drift terms need dt scaling as they are annualized
+        Xt = r * dt - ...      % Risk premium (no dt scaling as it works with volatility)
+             0.5 * ht(i, :) + ...             % Volatility adjustment (no dt as it's daily variance)
+             Z(i, :) * sqrt(ht(i, :));        % Diffusion term (no dt as Z scales with daily volatility)
+        
+        % Update asset prices
+        S(i, :) = S(i-1, :) .* exp(Xt);
+    end
 end

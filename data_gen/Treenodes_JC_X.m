@@ -1,4 +1,4 @@
-function nodes=Treenodes_JC_X(G,N,M,gamma)
+function [nodes,q]=Treenodes_JC_X(G,N,M,gamma)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  Introduction
@@ -37,7 +37,7 @@ function nodes=Treenodes_JC_X(G,N,M,gamma)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[z,~,~,~] = zq(M,gamma);   % generate discrete sampling values
+[z,q,~,~] = zq(M,gamma);   % generate discrete sampling values
 nodes=zeros(M,N);  % Initialization
 itype=zeros(N,1);
 

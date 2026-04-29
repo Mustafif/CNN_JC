@@ -1,0 +1,59 @@
+# Example: Duan GARCH model with 3% noise
+# Configuration for parameter comparison
+
+[model]
+type = "Duan"  # Duan GARCH model
+
+[scaling]
+contracts_per_day = 20
+num_days = 15
+batch_size = 150
+
+[market]
+N = 1260
+r = 0.0001984  # 0.05/252
+S0 = 100.0
+moneyness_range = [0.75, 1.25]
+maturity_range = [0.08, 1.2]  # ~1 month to ~14 months
+
+[willow_tree]
+m_h = 6
+m_ht = 6
+m_x = 30
+gamma_h = 0.6
+gamma_x = 0.8
+
+[solver]
+itmax = 100
+tol = 1e-6
+
+[noise]
+# Add 3% noise to simulate market imperfections
+level = 0.03
+seed = 123
+
+[parameters.true]
+omega = 2.0e-6
+alpha = 1.5e-6
+beta = 0.85
+gamma = 0.0      # Not used in Duan model
+lambda = 0.25
+
+[parameters.initial]
+omega = 3.0e-6
+alpha = 2.5e-6
+beta = 0.80
+gamma = 0.0
+lambda = 0.20
+
+[parameters.calibrated]
+omega = 2.05e-6
+alpha = 1.52e-6
+beta = 0.848
+gamma = 0.0
+lambda = 0.248
+
+[output]
+folder = "compare_duan_3pct_noise"
+save_asset_prices = true
+save_logs = true

@@ -1,0 +1,147 @@
+================================================================================
+  CENTRALIZED PARAMETER COMPARISON SYSTEM - QUICK REFERENCE
+================================================================================
+
+BASIC USAGE
+-----------
+1. Edit config:     vim compare_config.toml
+2. Generate data:   compare_dataset('compare_config.toml')
+3. Analyze:         rel_err_results()
+
+QUICK START
+-----------
+# Test system
+test_compare_system
+
+# Run with default config
+compare_dataset('compare_config.toml')
+rel_err_results()
+
+# Run with plots
+rel_err_results('plot', true)
+
+CONFIGURATION FILE (compare_config.toml)
+----------------------------------------
+[model]
+type = "HN"          # Model: "HN", "Duan", "GJR"
+
+[scaling]
+contracts_per_day = 10
+num_days = 10
+batch_size = 100
+
+[noise]
+level = 0.0          # 0.0=none, 0.01=1%, 0.05=5%
+seed = 42
+
+[parameters.true]
+omega = 1.0e-6
+alpha = 1.33e-6
+beta = 0.8
+gamma = 5.0
+lambda = 0.2
+
+[parameters.initial]
+# Your initial guess
+
+[parameters.calibrated]
+# Your calibrated values
+
+[output]
+folder = "compare"
+
+ANALYSIS OPTIONS
+----------------
+rel_err_results()                                    # Basic
+rel_err_results('plot', true)                        # With plots
+rel_err_results('folder', 'custom')                  # Custom folder
+rel_err_results('folder', 'custom', 'plot', true)    # Both
+
+COMMON TASKS
+------------
+# Change noise level
+Edit: [noise] level = 0.03   (3% noise)
+
+# Change model
+Edit: [model] type = "Duan"
+
+# Larger dataset
+Edit: [scaling] contracts_per_day = 100, num_days = 50
+
+# Different parameters
+Edit: [parameters.true] omega = 2.0e-6, ...
+
+OUTPUT FILES
+------------
+{folder}/true_params.csv         - True parameter dataset
+{folder}/initial_params.csv      - Initial parameter dataset
+{folder}/calibrated_params.csv   - Calibrated parameter dataset
+{folder}/rel_err_results.csv     - Analysis results
+{folder}/rel_err_heatmaps.png    - Visualization (if plot=true)
+
+TROUBLESHOOTING
+---------------
+Error: "Failed to read TOML"
+→ Install: pip install toml
+→ Check: python3 read_toml_config.py compare_config.toml
+
+Error: "Function not found"
+→ Ensure all required .m files are in MATLAB path
+→ Run: test_compare_system
+
+Memory issues
+→ Reduce contracts_per_day or num_days
+→ Increase batch_size
+
+EXAMPLES
+--------
+# Example 1: No noise
+[noise] level = 0.0
+compare_dataset('compare_config.toml')
+
+# Example 2: 2% noise
+[noise] level = 0.02
+compare_dataset('compare_config.toml')
+
+# Example 3: Duan model
+[model] type = "Duan"
+compare_dataset('compare_config.toml')
+
+# Example 4: Large dataset
+[scaling] contracts_per_day = 100, num_days = 50
+compare_dataset('compare_config.toml')
+
+NOISE STUDY WORKFLOW
+--------------------
+1. Create 4 configs: noise 0%, 1%, 3%, 5%
+2. Run each: compare_dataset('config_<N>pct.toml')
+3. Analyze: rel_err_results('folder', 'compare_<N>pct', 'plot', true)
+4. Compare improvement across noise levels
+
+KEY FEATURES
+------------
+✓ Single config file (TOML)
+✓ Same randomness across parameter sets
+✓ Built-in noise simulation
+✓ Multi-model support (HN, Duan, GJR)
+✓ Enhanced analysis with filtering
+✓ Optional visualization
+✓ Memory efficient (batch processing)
+
+MATLAB PATH REQUIREMENTS
+-------------------------
+Required functions must be in path:
+- mcHN.m, mcDuan.m, mcGJR.m
+- TreeNodes_ht_HN.m, TreeNodes_ht_Duan.m
+- TreeNodes_logSt_HN.m, TreeNodes_logSt_Duan.m
+- genhDelta.m, Prob_Xt.m, American.m
+- impvol_improved.m, impVol_Duan.m, impVol_GJR.m
+
+DOCUMENTATION
+-------------
+Detailed docs:    COMPARE_README.md
+Full summary:     COMPARE_SYSTEM_SUMMARY.md
+Usage examples:   example_compare_usage.m
+System test:      test_compare_system.m
+
+================================================================================

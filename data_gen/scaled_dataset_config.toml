@@ -1,0 +1,79 @@
+# Configuration file for scaled_dataset_optimized.m
+# Optimized dataset generation with configurable options
+
+[model]
+# Model type: "HN" (Heston-Nandi), "Duan", or "GJR"
+type = "Duan"
+
+[scaling]
+# Number of option contracts to generate per day
+contracts_per_day = 150
+
+# Number of trading days to simulate
+num_days = 100
+
+# Batch size for processing
+batch_size = 1000
+
+# Number of parameter sets to generate
+num_param_sets = 1
+
+[market]
+# Number of time steps in GARCH simulation
+N = 1260
+
+# Risk-free rate (daily)
+r = 0.0001984  # 0.05/252
+
+# Initial stock price
+S0 = 100.0
+
+# Moneyness range [min, max]
+moneyness_range = [0.8, 1.2]
+
+# Maturity range in days
+maturity_days = [30, 60, 90, 180, 360]
+
+[willow_tree]
+# Willow tree parameters for volatility path
+m_h = 6
+gamma_h = 0.6
+
+# Willow tree parameters for log-stock path
+m_x = 30
+gamma_x = 0.8
+
+[performance]
+# Use GPU acceleration if available
+use_gpu = true
+
+# Number of parallel workers (0 = auto-detect)
+num_workers = 0
+
+# Optimize for memory vs speed
+optimize_memory = true
+
+[noise]
+# Noise level to add to option prices (0.0 = no noise)
+# This is the standard deviation as a percentage of the option price
+# For example: 0.01 = 1% noise, 0.05 = 5% noise, 0.0 = no noise
+level = 0.01
+
+# Random seed for noise generation (set to -1 for random seed)
+seed = 42
+
+[output]
+# Output folder (will be created if it doesn't exist)
+# If empty, uses auto-generated timestamp-based folder
+folder = "Duan_Set1_Noise1Perc"
+
+# Output file basename (without extension)
+# If empty, uses "dataset_<model_type>"
+filename = ""
+
+# Whether to save asset price paths (S_paths from GARCH simulations)
+# Saves one CSV file per parameter set: asset_prices_set_1.csv, asset_prices_set_2.csv, etc.
+save_asset_prices = true
+
+# Whether to save detailed logs
+save_logs = true

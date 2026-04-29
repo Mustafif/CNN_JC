@@ -1,0 +1,40 @@
+# Configuration for Duan GARCH model with 3% noise
+# Useful for testing calibration robustness
+
+[model]
+type = "Duan"
+
+[scaling]
+contracts_per_day = 40
+num_days = 15
+batch_size = 120
+num_param_sets = 6
+
+[market]
+N = 1000
+r = 0.0001984
+S0 = 100.0
+moneyness_range = [0.75, 1.25]
+maturity_days = [30, 60, 90, 180, 360]
+
+[willow_tree]
+m_h = 6
+gamma_h = 0.6
+m_x = 30
+gamma_x = 0.8
+
+[performance]
+use_gpu = false
+num_workers = 0
+optimize_memory = false
+
+[noise]
+# 3% noise level - typical market noise
+level = 0.03
+seed = 123
+
+[output]
+folder = ""
+filename = ""
+save_asset_prices = true
+save_logs = true

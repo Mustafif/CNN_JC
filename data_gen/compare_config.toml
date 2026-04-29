@@ -1,0 +1,86 @@
+# Configuration file for compare_dataset.m
+# Comparison of true, initial, and calibrated GARCH parameters
+
+[model]
+# Model type: "HN" (Heston-Nandi), "Duan", or "GJR"
+type = "HN"
+
+[scaling]
+# Number of option contracts to generate per day
+contracts_per_day = 10
+
+# Number of trading days to simulate
+num_days = 10
+
+# Batch size for processing
+batch_size = 100
+
+[market]
+# Number of time steps
+N = 1024
+
+# Risk-free rate (daily)
+r = 0.0001984  # 0.05/252
+
+# Initial stock price
+S0 = 100.0
+
+# Moneyness range [min, max]
+moneyness_range = [0.8, 1.2]
+
+# Maturity range in years [min, max]
+maturity_range = [0.1, 1.0]
+
+[willow_tree]
+m_h = 6
+m_ht = 6
+m_x = 30
+gamma_h = 0.6
+gamma_x = 0.8
+
+[solver]
+itmax = 100
+tol = 1e-6
+
+[noise]
+# Noise level to add to option prices (0.0 = no noise)
+# This is the standard deviation as a percentage of the option price
+# For example: 0.01 = 1% noise, 0.05 = 5% noise
+level = 0.05
+
+# Random seed for noise generation (set to -1 for random seed)
+seed = 42
+
+[parameters.true]
+# TRUE (market) parameters
+omega = 1.0e-6
+alpha = 1.33e-6
+beta = 0.8
+gamma = 5.0
+lambda = 0.2
+
+[parameters.initial]
+# INITIAL guess parameters (from compare/init.json)
+omega = 1.0e-6
+alpha = 1.5e-6
+beta = 0.500000015
+gamma = 1.0
+lambda = 0.1
+
+[parameters.calibrated]
+# CALIBRATED parameters (from compare/results_best1bin.json)
+omega = 9.254793490948722e-07
+alpha = 1.2776396302437386e-06
+beta = 0.7971227121160148
+gamma = 6.608377980746554
+lambda = 0.9726447064785998
+
+[output]
+# Output folder (will be created if it doesn't exist)
+folder = "compare"
+
+# Whether to save asset price paths
+save_asset_prices = true
+
+# Whether to save detailed logs
+save_logs = true

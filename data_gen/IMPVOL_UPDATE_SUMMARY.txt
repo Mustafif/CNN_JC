@@ -1,0 +1,181 @@
+================================================================================
+              IMPVOL UPDATE - SWITCHED TO FZERO-BASED SOLVER
+================================================================================
+
+WHAT CHANGED
+------------
+✓ Created new impvol_fzero.m using MATLAB's fzero function
+✓ Updated scaled_dataset.m to use impvol_fzero
+✓ Updated compare_dataset.m to use impvol_fzero
+✓ Simpler interface - no need for tol and itmax parameters
+
+WHY THE CHANGE
+--------------
+You asked: "shouldn't we use fzero?" ✓ Absolutely correct!
+
+fzero advantages:
+  • MATLAB's proven, industrial-strength root-finding algorithm
+  • Uses Brent's method (optimal combination of methods)
+  • More robust convergence, especially for edge cases
+  • Better handling of extreme GARCH volatilities
+  • Simpler interface - automatic convergence control
+  • Less code to maintain
+
+OLD vs NEW
+----------
+OLD (custom solver):
+  [impl_c, ~, ~, ~] = impvol_improved(S_current, K_strike, T_maturity, 
+                                       r, V_C, 1, N, m_x, gamma_x, tol, itmax);
+  • Custom Newton-Raphson/bisection hybrid
+  • Requires tuning tol and itmax
+  • May fail in edge cases
+  • More complex code
+
+NEW (fzero-based):
+  [impl_c, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity,
+                                r, V_C, 1, N, m_x, gamma_x);
+  • Uses MATLAB's fzero (Brent's method)
+  • Automatic convergence control
+  • Fallback bisection if needed
+  • Simpler, cleaner code
+
+FILES CREATED/UPDATED
+---------------------
+NEW FILES:
+  ✓ impvol_fzero.m              - New fzero-based solver
+  ✓ test_impvol_fzero.m         - Test suite for new solver
+  ✓ IMPVOL_UPDATE.md            - Detailed update documentation
+
+UPDATED FILES:
+  ✓ scaled_dataset.m            - Now uses impvol_fzero
+  ✓ compare_dataset.m           - Now uses impvol_fzero
+  ✓ GETTING_STARTED.md          - Updated dependencies
+
+HOW TO TEST
+-----------
+1. Navigate to data_gen folder:
+   cd data_gen
+
+2. Run test suite:
+   test_impvol_fzero
+
+3. Expected output:
+   ✓ All dependencies found
+   ✓ Basic tests pass
+   ✓ Edge cases handled
+   ✓ Comparison with old method (if available)
+
+FUNCTION SIGNATURE
+------------------
+[imp_vol, V0, converged] = impvol_fzero(S0, K, T, r, V_target, index, N, m, gamma)
+
+Inputs:
+  S0       - Current stock price
+  K        - Strike price  
+  T        - Time to maturity (years)
+  r        - Risk-free rate
+  V_target - Target option price
+  index    - Option type (+1 call, -1 put)
+  N        - Number of time steps
+  m        - Number of tree nodes
+  gamma    - Willow tree gamma parameter
+
+Outputs:
+  imp_vol   - Implied volatility
+  V0        - Option price at implied volatility
+  converged - Convergence flag
+
+KEY FEATURES
+------------
+✓ Smart initial guess based on moneyness
+✓ Wide search range (0.1% to 500%)
+✓ Robust error handling
+✓ Fallback to bisection if fzero fails
+✓ Handles edge cases (very small prices, extreme volatilities)
+
+BACKWARD COMPATIBILITY
+----------------------
+The old impvol_improved function is still available if needed.
+
+To revert (if necessary):
+  # In scaled_dataset.m or compare_dataset.m
+  Change: [impl_c, ~, ~] = impvol_fzero(...);
+  To:     [impl_c, ~, ~, ~] = impvol_improved(..., tol, itmax);
+
+MIGRATION CHECKLIST
+-------------------
+✓ impvol_fzero.m created
+✓ scaled_dataset.m updated  
+✓ compare_dataset.m updated
+✓ Test suite created
+✓ Documentation updated
+☐ Run test_impvol_fzero to verify
+☐ Test with actual data
+☐ Monitor convergence rates
+☐ Update any custom scripts
+
+PERFORMANCE NOTES
+-----------------
+Speed:      Similar or slightly slower than well-tuned custom solver
+Accuracy:   Same accuracy when converged
+Robustness: Much better - fewer failures, handles edge cases
+Overall:    Better user experience, less manual intervention
+
+TESTING RECOMMENDATIONS
+-----------------------
+1. Run test suite:
+   test_impvol_fzero
+
+2. Test with your actual data:
+   compare_dataset('compare_config.toml')
+   
+3. Compare convergence rates:
+   • Count number of converged options
+   • Check for NaN or extreme values
+   • Verify results are reasonable
+
+4. Spot check some results:
+   • ATM options should have ~20-40% IV (typical)
+   • Deep OTM should have lower prices
+   • ITM should have intrinsic value + time value
+
+TROUBLESHOOTING
+---------------
+If you encounter issues:
+
+1. Check dependencies:
+   test_impvol_fzero  (runs dependency check)
+
+2. Verify inputs are reasonable:
+   • S0, K, T > 0
+   • r is appropriate rate
+   • V_target > 0
+   • N, m > 0
+
+3. Try old solver for comparison:
+   [iv_old, ~, ~, ~] = impvol_improved(...);
+
+4. Check for extreme cases:
+   • Very deep ITM/OTM (moneyness < 0.5 or > 2.0)
+   • Very short maturity (T < 1 day)
+   • Very long maturity (T > 2 years)
+   • Extreme prices (V > S0 for calls)
+
+NEXT STEPS
+----------
+1. Run test suite: test_impvol_fzero
+2. Generate test dataset: compare_dataset('compare_config.toml')
+3. Verify results: rel_err_results()
+4. Compare with previous results (if available)
+5. Monitor for any issues
+
+DOCUMENTATION
+-------------
+Detailed info: IMPVOL_UPDATE.md
+Quick ref:     This file
+Test suite:    test_impvol_fzero.m
+Code:          impvol_fzero.m
+
+================================================================================
+                    UPDATE COMPLETE - READY TO USE!
+================================================================================

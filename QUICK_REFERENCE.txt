@@ -1,0 +1,145 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║           CENTRALIZED GARCH DATASET GENERATOR - QUICK REFERENCE           ║
+╔═══════════════════════════════════════════════════════════════════════════╗
+
+📁 LOCATION: /hdd/CNN_JC/scaled_dataset.m
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ BASIC USAGE                                                               │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  scaled_dataset('HN')        → Generate HN-GARCH dataset
+  scaled_dataset('Duan')      → Generate Duan GARCH dataset  
+  scaled_dataset('GJR')       → Generate GJR-GARCH dataset
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ COMMON PARAMETERS                                                         │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  'ContractsPerDay'   Number of contracts per day       (default: 50)
+  'NumDays'           Number of trading days            (default: 20)
+  'NumParamSets'      Number of GARCH parameter sets    (default: 5)
+  'OutputFile'        Output CSV filename               (default: auto)
+  'MoneynessRange'    [min, max] for K/S                (default: [0.8, 1.2])
+  'MaturityDays'      Array of discrete maturity days   (default: [30,60,90,180,360])
+  'BatchSize'         Contracts per batch               (default: 100)
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ EXAMPLES                                                                  │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  ① Quick Test (100 contracts, ~1 minute)
+     scaled_dataset('HN', 'ContractsPerDay', 10, 'NumDays', 5, ...
+                    'NumParamSets', 2)
+
+  ② Medium Dataset (6,000 contracts, ~15 minutes)  
+     scaled_dataset('Duan', 'ContractsPerDay', 100, 'NumDays', 30)
+
+  ③ Large Dataset (20,000 contracts, ~2 hours)
+     scaled_dataset('GJR', 'ContractsPerDay', 200, 'NumDays', 50, ...
+                    'NumParamSets', 10)
+
+  ④ Custom Output
+     scaled_dataset('HN', 'OutputFile', 'training_data.csv')
+
+  ⑤ Wide Ranges
+     scaled_dataset('Duan', 'MoneynessRange', [0.7, 1.3], ...
+                    'MaturityDays', [7, 14, 30, 60, 90, 180, 360])
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ OUTPUT STRUCTURE                                                          │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  Each run creates a timestamped folder:
+  
+  generation_<model>_<timestamp>/
+  ├── dataset_<model>.csv      # Cleaned main dataset
+  ├── garch_params.csv          # GARCH parameters used
+  ├── asset_prices.csv          # Asset price paths
+  └── metadata.txt              # Generation info & stats
+
+  🧹 DATA CLEANING (automatic):
+     • Removes V < 0.5 (low-value options)
+     • Removes T = 1/252 (daily options)
+     • Removes NaN/Inf values
+     • Typical: 5-15% removed
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ OUTPUT FORMAT (12 columns)                                                │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  Col  Name        Description
+  ───  ──────────  ─────────────────────────────────────────────────
+   1   S0          Spot price
+   2   m           Moneyness (K/S)
+   3   r           Risk-free rate
+   4   T           Time to maturity (years)
+   5   corp        Call/Put flag (1 = Call, -1 = Put)
+   6   alpha       GARCH alpha parameter
+   7   beta        GARCH beta parameter
+   8   omega       GARCH omega parameter  
+   9   gamma/theta Model-specific (gamma for HN/GJR, theta for Duan)
+  10   lambda      GARCH lambda parameter
+  11   sigma       Implied volatility
+  12   V           Option price
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ MODEL DIFFERENCES                                                         │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  HN-GARCH:
+    • Leverage via gamma parameter [50, 150]
+    • Stationarity: beta + alpha*gamma² < 1
+    • Column 9 = gamma
+    
+  Duan GARCH:
+    • Risk premium via theta parameter [0.25, 0.5]
+    • Stationarity: beta + alpha*theta² < 1  
+    • Column 9 = theta
+    • More complex moment calculations
+    
+  GJR-GARCH:
+    • Asymmetric volatility via lambda [0.01, 0.15]
+    • Stationarity: beta + alpha + lambda/2 < 1
+    • Column 9 = 0 (gamma placeholder)
+    • Fastest to compute
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ FILES & DOCUMENTATION                                                     │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  📄 scaled_dataset.m              Main function
+  📖 DATASET_GENERATOR_README.md   Complete documentation
+  �� test_scaled_dataset.m         Test all three models
+  📚 example_usage.m               8 usage examples
+  📋 QUICK_REFERENCE.txt           This file
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ TYPICAL WORKFLOW                                                          │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  1. cd /hdd/CNN_JC
+  2. Run: scaled_dataset('HN')  (or 'Duan' or 'GJR')
+  3. Wait for completion (progress shown)
+  4. Check output CSV file
+  5. Load into your ML pipeline
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                           │
+└───────────────────────────────────────────────────────────────────────────┘
+
+  ⚠️  "Function not found"
+      → Ensure you're in /hdd/CNN_JC directory
+      
+  ⚠️  Memory issues
+      → Reduce BatchSize or ContractsPerDay
+      
+  ⚠️  Slow processing
+      → Normal! ~1-2 sec per contract
+      → Reduce dataset size for testing
+      
+  ⚠️  Some pricing errors
+      → Normal! <5% failure rate expected
+      → Failed contracts get placeholder values
+
+╚═══════════════════════════════════════════════════════════════════════════╝

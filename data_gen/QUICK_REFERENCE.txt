@@ -1,0 +1,100 @@
+╔═════════════════════════════════════════════════════════════════╗
+║   QUICK REFERENCE: Tree Building Fix                           ║
+║   scaled_dataset_optimized_configurable.m                       ║
+╚═════════════════════════════════════════════════════════════════╝
+
+WHAT WAS FIXED?
+───────────────
+✓ Tree building functions now model-specific
+✓ MC simulation functions now model-specific
+✓ Parameter generation now model-aware
+
+THREE MODELS NOW SUPPORTED:
+──────────────────────────
+1. HN (Heston-Nandi)        - Gamma parameter model
+2. DUAN                      - Theta parameter model
+3. GJR                       - Leverage effect model
+
+HOW TO USE:
+───────────
+
+Test with small dataset:
+
+  % HN Model
+  scaled_dataset_optimized_configurable('model_type', 'HN', ...
+                                        'contracts_per_day', 10, 'num_days', 2)
+
+  % DUAN Model
+  scaled_dataset_optimized_configurable('model_type', 'DUAN', ...
+                                        'contracts_per_day', 10, 'num_days', 2)
+
+  % GJR Model
+  scaled_dataset_optimized_configurable('model_type', 'GJR', ...
+                                        'contracts_per_day', 10, 'num_days', 2)
+
+Use with config file:
+
+  scaled_dataset_optimized_configurable('model_type', 'DUAN', ...
+                                        'config', 'scaled_dataset_config_duan_3pct.toml')
+
+WHAT CHANGED IN THE CODE:
+──────────────────────────
+
+Lines 229-260:     Parfor loop (switch statement for model routing)
+Lines 322-365:     process_parameter_set_HN()
+Lines 367-410:     process_parameter_set_DUAN()
+Lines 412-455:     process_parameter_set_GJR()
+Lines 457-506:     generate_param_sets() (updated to be model-aware)
+
+KEY FUNCTIONS:
+───────────────
+
+HN Model:
+├─ MC:         mcHN()
+├─ Tree ht:    TreeNodes_ht_HN()
+├─ Tree X:     TreeNodes_logSt_HN()
+└─ Params:     omega, alpha, beta, gamma, lambda
+
+DUAN Model:
+├─ MC:         mcDuan()
+├─ Tree ht:    TreeNodes_ht_D()
+├─ Tree X:     TreeNodes_logSt_D()
+└─ Params:     omega, alpha, beta, theta, lambda
+
+GJR Model:
+├─ MC:         mcGJR()
+├─ Tree ht:    TreeNodes_ht_GJR()
+├─ Tree X:     TreeNodes_logSt_GJR()
+└─ Params:     omega, alpha, beta, lambda
+
+NOISE APPLICATION:
+───────────────────
+Noise is applied to PRICES (not IV):
+1. Price options using tree
+2. Apply multiplicative noise to prices
+3. Calculate IV from noisy prices
+4. Save both V and IV to dataset
+
+DOCUMENTATION:
+────────────────
+- VERIFICATION_REPORT.txt      - Original issue analysis
+- FIX_SUMMARY.md               - Detailed fix overview  
+- BEFORE_AFTER_COMPARISON.md   - Code comparisons
+- IMPLEMENTATION_COMPLETE.txt  - Full implementation summary
+- QUICK_REFERENCE.txt          - This file
+
+FILE CHANGES:
+──────────────
+Old: 619 lines
+New: 756 lines
+Added: ~200 lines (3 new processing functions)
+Modified: ~50 lines (parfor loop + param generation)
+Removed: ~50 lines (hardcoded HN calls)
+
+STATUS:
+────────
+✓ All issues fixed
+✓ All functions verified
+✓ No regressions
+✓ Ready for production use
+

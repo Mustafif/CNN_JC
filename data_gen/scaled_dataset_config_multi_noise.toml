@@ -1,0 +1,48 @@
+# Configuration for multi-noise dataset generation
+# Generates 3 datasets (0%, 1%, 5% noise) with the same GARCH parameters
+
+[model]
+type = "Duan"
+
+[scaling]
+contracts_per_day = 150
+num_days = 100
+num_param_sets = 1 # Using only 1 parameter set for multi-noise demo
+batch_size=6000
+
+[market]
+N = 1260
+r = 0.0001984
+S0 = 100.0
+moneyness_range = [0.8, 1.2]
+maturity_days = [30, 60, 90 180 360]
+
+[willow_tree]
+m_h = 6
+gamma_h = 0.6
+m_x = 30
+gamma_x = 0.8
+
+[performance]
+use_gpu = true
+num_workers = 12
+optimize_memory = false
+enable_nested_parfor = true # Set to true for large workloads
+batch_size_auto = false   # Auto-tune from system memory
+
+[noise]
+# These are ignored when multi_noise is enabled
+level = 0.0
+seed = 42
+
+[multi_noise]
+# Enable multi-noise generation (3 datasets with same params, different noise)
+enabled = true
+# Noise levels as percentages (will be converted to decimals: 0.0, 0.01, 0.05)
+noise_levels = [0, 0.01, 0.05]
+
+[output]
+folder = "Duan_Set2"  # Auto-generated with timestamp
+filename = ""
+save_asset_prices = true
+save_logs = true
