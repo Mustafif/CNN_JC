@@ -3,14 +3,14 @@
 
 [model]
 # Model type: "HN" (Heston-Nandi), "Duan", or "GJR"
-type = "HN"
+type = "Duan"
 
 [scaling]
 # Number of option contracts to generate per day
-contracts_per_day = 10
+contracts_per_day = 50
 
 # Number of trading days to simulate
-num_days = 10
+num_days = 20
 
 # Batch size for processing
 batch_size = 100
@@ -26,7 +26,7 @@ r = 0.0001984  # 0.05/252
 S0 = 100.0
 
 # Moneyness range [min, max]
-moneyness_range = [0.8, 1.2]
+moneyness_range = [0.5, 1.5]
 
 # Maturity range in years [min, max]
 maturity_range = [0.1, 1.0]
@@ -46,38 +46,38 @@ tol = 1e-6
 # Noise level to add to option prices (0.0 = no noise)
 # This is the standard deviation as a percentage of the option price
 # For example: 0.01 = 1% noise, 0.05 = 5% noise
-level = 0.05
+level = 0.0
 
 # Random seed for noise generation (set to -1 for random seed)
 seed = 42
 
 [parameters.true]
 # TRUE (market) parameters
-omega = 1.0e-6
-alpha = 1.33e-6
-beta = 0.8
-gamma = 5.0
-lambda = 0.2
+omega = 1.02919411267632e-7
+alpha = 1.28907238961758e-6
+beta = 0.842684227670267
+gamma = 0.455506510125903
+lambda = 0.578873054044507
 
 [parameters.initial]
 # INITIAL guess parameters (from compare/init.json)
-omega = 1.0e-6
+omega = 3.0661506947625343e-6
 alpha = 1.5e-6
-beta = 0.500000015
-gamma = 1.0
-lambda = 0.1
+beta = 0.5
+gamma = 0.25
+lambda = 0.3
 
 [parameters.calibrated]
 # CALIBRATED parameters (from compare/results_best1bin.json)
-omega = 9.254793490948722e-07
-alpha = 1.2776396302437386e-06
-beta = 0.7971227121160148
-gamma = 6.608377980746554
-lambda = 0.9726447064785998
+omega = 3.606017204027954e-7
+alpha = 1.0065360268106307e-6
+beta = 0.849534524596838
+gamma = 0.2501296586494795
+lambda = 0.3002062495962492
 
 [output]
 # Output folder (will be created if it doesn't exist)
-folder = "compare"
+folder = "compare2"
 
 # Whether to save asset price paths
 save_asset_prices = true

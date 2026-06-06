@@ -23,6 +23,19 @@ function [imp_vol, V0, it, converged] = impvol_improved(S0, K, T, r, V, index, N
 %   converged -- convergence flag for each option
 %
 
+% Validate required parameters
+if nargin < 11
+    error('impvol_improved requires 11 parameters: S0, K, T, r, V, index, N, m, gamma, tol, itmax');
+end
+
+if ~isfinite(tol) || tol <= 0
+    error('tol must be a positive finite number, got: %.4e', tol);
+end
+
+if ~isfinite(itmax) || itmax < 1 || itmax ~= floor(itmax)
+    error('itmax must be a positive integer, got: %.0f', itmax);
+end
+
 % Get dimensions
 n = length(T);
 k = size(K, 1);
@@ -46,7 +59,7 @@ boundary_high_count = 0;
 convergence_failures = 0;
 
 fprintf('Starting improved implied volatility calculation...\n');
-fprintf('Processing %d options with bounds [%.3f, %.1f]\n', k*n, sigma_min, sigma_max);
+fprintf('Processing %d options with bounds [%.3f, %.1f], tol=%.2e, itmax=%d\n', k*n, sigma_min, sigma_max, tol, itmax);
 
 % Loop over each maturity
 for i = 1:n

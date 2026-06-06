@@ -43,15 +43,51 @@ impr_T = improved_data(:,4);
 impr_corp = improved_data(:,5);
 impr_sigma = improved_data(:,11);
 impr_V = improved_data(:,12);
-impr_converged = improved_data(:,13);
-impr_iterations = improved_data(:,14);
-impr_pcp_error = improved_data(:,15);
 
 % Separate calls and puts
 orig_calls = (orig_corp == 1);
 orig_puts = (orig_corp == -1);
 impr_calls = (impr_corp == 1);
 impr_puts = (impr_corp == -1);
+
+% DATA VALIDATION AND CLEANING (similar to scaled_dataset_optimized_configurable.m)
+fprintf('\nValidating and cleaning data...\n');
+
+% Build valid masks similar to scaled_dataset_optimized_configurable.m line 371-374
+% Valid contracts must have:
+% 1. Option value >= 0.5 (minimum threshold)
+% 2. Maturity not equal to 1/252 (invalid edge case)
+% 3. No NaN or Inf values
+orig_valid_mask = (orig_V >= 0.5) & ...
+                  (abs(orig_T - 1/252) > 1e-10) & ...
+                  ~isnan(orig_V) & ~isnan(orig_sigma) & ~isnan(orig_m) & ...
+                  ~isinf(orig_V) & ~isinf(orig_sigma);
+
+impr_valid_mask = (impr_V >= 0.5) & ...
+                  (abs(impr_T - 1/252) > 1e-10) & ...
+                  ~isnan(impr_V) & ~isnan(impr_sigma) & ~isnan(impr_m) & ...
+                  ~isinf(impr_V) & ~isinf(impr_sigma);
+
+% Apply masks
+orig_S0 = orig_S0(orig_valid_mask);
+orig_m = orig_m(orig_valid_mask);
+orig_T = orig_T(orig_valid_mask);
+orig_corp = orig_corp(orig_valid_mask);
+orig_sigma = orig_sigma(orig_valid_mask);
+orig_V = orig_V(orig_valid_mask);
+orig_calls = orig_calls(orig_valid_mask);
+orig_puts = orig_puts(orig_valid_mask);
+
+impr_S0 = impr_S0(impr_valid_mask);
+impr_m = impr_m(impr_valid_mask);
+impr_T = impr_T(impr_valid_mask);
+impr_corp = impr_corp(impr_valid_mask);
+impr_sigma = impr_sigma(impr_valid_mask);
+impr_V = impr_V(impr_valid_mask);
+impr_calls = impr_calls(impr_valid_mask);
+impr_puts = impr_puts(impr_valid_mask);
+
+fprintf('✓ Validation complete. Cleaned datasets ready for analysis.\n');
 
 fprintf('\n=================================================================\n');
 fprintf('                     BASIC STATISTICS\n');
@@ -63,12 +99,6 @@ fprintf('                        --------    --------\n');
 fprintf('Total options:          %8d    %8d\n', length(orig_sigma), length(impr_sigma));
 fprintf('Call options:           %8d    %8d\n', sum(orig_calls), sum(impr_calls));
 fprintf('Put options:            %8d    %8d\n', sum(orig_puts), sum(impr_puts));
-
-% Convergence statistics (only available for improved)
-if size(improved_data, 2) >= 13
-    fprintf('Convergence rate:       %8s    %7.1f%%\n', 'N/A', 100*sum(impr_converged)/length(impr_converged));
-    fprintf('Avg iterations:         %8s    %7.1f\n', 'N/A', mean(impr_iterations));
-end
 
 fprintf('\n=================================================================\n');
 fprintf('                 IMPLIED VOLATILITY ANALYSIS\n');

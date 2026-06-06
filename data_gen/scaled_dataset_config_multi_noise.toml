@@ -42,7 +42,7 @@ enabled = true
 noise_levels = [0, 0.01, 0.05]
 
 [output]
-folder = "Duan_Set2"  # Auto-generated with timestamp
+folder = "Duan_Set3"  # Auto-generated with timestamp
 filename = ""
 save_asset_prices = true
 save_logs = true

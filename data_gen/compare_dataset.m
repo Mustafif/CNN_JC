@@ -154,8 +154,10 @@ fprintf('Random matrix Z generated: size = %d x %d\n', size(Z_master,1), size(Z_
 
 % Initialize noise generator if needed
 if noise_level > 0
-    if noise_seed > 0
-        rng(noise_seed);
+    if noise_seed >= 0
+        noise_rng = RandStream('mt19937ar', 'Seed', noise_seed);
+    else
+        noise_rng = RandStream('mt19937ar', 'Seed', randi([0, 2^31-1]));
     end
     fprintf('Noise will be added to option prices\n');
 end
@@ -188,12 +190,22 @@ for ps = 1:numel(param_sets)
     
     Z = Z_master;  % Use same randomness for all parameter sets
     
+    % Calculate risk-neutral parameter first (needed for mcDuan)
+    c = gamma + lambda + 0.5;  % Risk-neutral parameter
+    
+    % Add model-specific paths before calling model functions
+    if strcmp(model_type, 'DUAN')
+        addpath('Duan_Garch');
+    elseif strcmp(model_type, 'GJR')
+        addpath('GJR_Garch');
+    end
+
     % Select appropriate MC function based on model type
     switch model_type
         case 'HN'
             [S_paths, h0_paths] = mcHN(M, N, S0, Z, r, omega, alpha, beta, gamma, lambda);
         case 'DUAN'
-            [S_paths, h0_paths] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, lambda);
+            [S_paths, h0_paths] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, gamma, lambda);
         case 'GJR'
             [S_paths, h0_paths] = mcGJR(M, N, S0, Z, r, omega, alpha, beta, gamma, lambda);
         otherwise
@@ -211,50 +223,51 @@ for ps = 1:numel(param_sets)
     %% PREPARE TREE STRUCTURES
     fprintf('Building willow trees for %s...\n', setname);
     
-    c = gamma + lambda + 0.5;  % Risk-neutral parameter
-    
     try
-        [hd, qhd] = genhDelta(h0_paths, beta, alpha, c, omega, m_h, gamma_h);
+        [hd, qhd] = genhDelta(h0_paths(1), beta, alpha, c, omega, m_h, gamma_h);
         
         % Build tree nodes based on model type
         switch model_type
             case 'HN'
                 [nodes_ht] = TreeNodes_ht_HN(m_h, hd, qhd, gamma_h, alpha, beta, c, omega, N+1);
             case 'DUAN'
-                [nodes_ht] = TreeNodes_ht_Duan(m_h, hd, qhd, gamma_h, alpha, beta, lambda, omega, N+1);
+                [nodes_ht, qht, hmom1, hmom2, ~, ~] = TreeNodes_ht_D(m_h, h0_paths(1), gamma_h, omega, beta, alpha, gamma, lambda, N+1);
             otherwise
                 error('Tree construction not implemented for model: %s', model_type);
         end
         
-        % Pre-compute tree nodes for different days
-        tree_cache = cell(NUM_DAYS, 1);
-        for day = 1:NUM_DAYS
-            S_current = S_paths(end - CONTRACTS_PER_DAY + day, min(day, M));
-            h_current = h0_paths(min(day, M));
-            
-            % Build spatial tree nodes
-            switch model_type
-                case 'HN'
-                    [nodes_Xt, ~, ~, ~, ~] = TreeNodes_logSt_HN(m_x, gamma_x, r, hd, qhd, S_current, alpha, beta, c, omega, N);
-                case 'DUAN'
-                    [nodes_Xt, ~, ~, ~, ~] = TreeNodes_logSt_Duan(m_x, gamma_x, r, hd, qhd, S_current, alpha, beta, lambda, omega, N);
-                otherwise
-                    error('Tree construction not implemented for model: %s', model_type);
-            end
-            
-            [q_Xt, P_Xt, ~] = Prob_Xt(nodes_ht, qhd, nodes_Xt, S_current, r, alpha, beta, c, omega);
-            
-            nodes_S = exp(nodes_Xt);
-            
-            tree_cache{day} = struct('nodes_S', nodes_S, 'P_Xt', P_Xt, ...
-                                     'q_Xt', q_Xt, 'S_current', S_current, ...
-                                     'h_current', h_current);
+        % Build basic tree structures for pricing
+        S_current = S_paths(1, 1);  % Use first stock price
+        switch model_type
+            case 'HN'
+                [nodes_Xt, ~, ~, ~, ~] = TreeNodes_logSt_HN(m_x, gamma_x, r, hd, qhd, S_current, alpha, beta, c, omega, N);
+                [q_Xt, P_Xt, ~] = Prob_Xt(nodes_ht, qhd, nodes_Xt, S_current, r, alpha, beta, c, omega);
+            case 'DUAN'
+                [nodes_Xt, ~, ~, ~, ~] = TreeNodes_logSt_D(m_x, gamma_x, r, h0_paths(1), omega, beta, alpha, gamma, lambda, N, hmom1, hmom2);
+                nodes_Xt = nodes_Xt + log(S_current);
+                [q_Xt, P_Xt, ~] = Probility_Xt2(nodes_ht, qht, nodes_Xt, S_current, r, omega, beta, alpha, gamma, lambda);
+            otherwise
+                error('Tree construction not implemented for model: %s', model_type);
         end
         
-        fprintf('Trees cached for %d days (%s)\n', NUM_DAYS, setname);
+        nodes_S = exp(nodes_Xt);
+        
+        % Create simple tree cache for all days (same trees for simplicity)
+        tree_cache = cell(NUM_DAYS, 1);
+        for day = 1:NUM_DAYS
+            tree_cache{day} = struct('nodes_S', nodes_S, 'P_Xt', P_Xt, ...
+                                     'q_Xt', q_Xt, 'S_current', S_current);
+        end
+        
+        fprintf('Trees built successfully for %s\n', setname);
         
     catch ME
         fprintf('Error building trees for %s: %s\n', setname, ME.message);
+        fprintf('Stack trace:\n');
+        for k = 1:length(ME.stack)
+            fprintf('  File: %s, Line: %d, Function: %s\n', ...
+                ME.stack(k).file, ME.stack(k).line, ME.stack(k).name);
+        end
         continue;
     end
     
@@ -307,12 +320,12 @@ for ps = 1:numel(param_sets)
                 [V_C, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, 1);
                 [V_P, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, -1);
                 
-                % Add noise if configured
+                % Add noise if configured (multiplicative, matching scaled_dataset)
                 if noise_level > 0
-                    noise_c = randn() * noise_level * V_C;
-                    noise_p = randn() * noise_level * V_P;
-                    V_C = max(0, V_C + noise_c);  % Ensure non-negative
-                    V_P = max(0, V_P + noise_p);
+                    noise_c = 1 + noise_level * randn(noise_rng);
+                    noise_p = 1 + noise_level * randn(noise_rng);
+                    V_C = V_C * noise_c;
+                    V_P = V_P * noise_p;
                 end
                 
                 % Validate
@@ -322,7 +335,7 @@ for ps = 1:numel(param_sets)
                     continue;
                 end
                 
-                % Compute implied volatility using fzero (more robust)
+                % Compute implied volatility using impvol_fzero (consistent with scaled_dataset)
                 [impl_c, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity, r, V_C, 1, N, m_x, gamma_x);
                 [impl_p, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity, r, V_P, -1, N, m_x, gamma_x);
                 
@@ -365,15 +378,8 @@ for ps = 1:numel(param_sets)
             catch ME
                 batch_errors = batch_errors + 1;
                 pricing_errors = pricing_errors + 1;
-                
-                % Store error placeholders
-                for k = 1:2
-                    dataset(:, dataset_idx) = [
-                        S_current; K_strike/S_current; r; T_maturity; (-1)^k;
-                        alpha; beta; omega; gamma; lambda; 0.2; 0
-                    ];
-                    dataset_idx = dataset_idx + 1;
-                end
+                % Skip failed contracts (no placeholder rows), consistent with scaled_dataset
+                continue;
             end
         end
         
@@ -411,6 +417,13 @@ for ps = 1:numel(param_sets)
     fprintf('  Total time: %.2f minutes\n', sum(processing_times) / 60);
     fprintf('  Pricing errors: %d (%.1f%%)\n', pricing_errors, 100*pricing_errors/max(actual_contracts,1));
     fprintf('=================================================================\n');
+
+    % Clean up model-specific paths
+    if strcmp(model_type, 'DUAN')
+        rmpath('Duan_Garch');
+    elseif strcmp(model_type, 'GJR')
+        rmpath('GJR_Garch');
+    end
 end
 
 fprintf('\n=================================================================\n');
