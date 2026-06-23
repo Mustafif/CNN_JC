@@ -6,12 +6,12 @@ fprintf('   SCALABLE HESTON-NANDI GARCH - PARALLEL VERSION\n');
 fprintf('=================================================================\n\n');
 
 %% ------------------ SCALING PARAMETERS ------------------
-CONTRACTS_PER_DAY = 200;     
-NUM_DAYS = 25;              
-BATCH_SIZE = 250;            % Adjust batch size for parallelism
-NUM_PARAM_SETS = 10;         
+CONTRACTS_PER_DAY = 1;     
+NUM_DAYS = 1;              
+BATCH_SIZE = 1;            % Adjust batch size for parallelism
+NUM_PARAM_SETS = 1;         
 
-total_contracts = CONTRACTS_PER_DAY * NUM_DAYS;  
+total_contracts = CONTRACTS_PER_DAY * NUM_DAYS * 2 * NUM_PARAM_SETS;  
 
 num_batches = ceil(total_contracts / BATCH_SIZE);
 
@@ -24,7 +24,8 @@ fprintf('  Batch size: %d\n', BATCH_SIZE);
 fprintf('  Number of batches: %d\n', num_batches);
 
 %% ------------------ MARKET PARAMETERS ------------------
-T = [30,60,90,180,360]/252;
+tic;
+T = [30,60,90,180,360];
 N = 504;
 r = 0.05/252;
 S0 = 100;
@@ -49,7 +50,7 @@ while valid_sets < NUM_PARAM_SETS
     gamma = gamma_range(1) + diff(gamma_range)*rand();
     lambda= lambda_range(1) + diff(lambda_range)*rand();
     
-    if beta + alpha*gamma^2 < 0.999
+    if beta + alpha + lambda/2 < 0.999
         valid_sets = valid_sets + 1;
         param_sets(valid_sets,:) = [alpha,beta,omega,gamma,lambda];
     end
@@ -152,7 +153,8 @@ for b = 1:num_batches
         pos = pos + cols;
     end
 end
-
+elapsed = toc;
+fprintf("Elapsed time: %6f\n", elapsed);
 fprintf('=================================================================\n');
 fprintf('PARALLEL DATASET GENERATION COMPLETE\n');
 fprintf('Saved: varying_garch_parallel_%d.csv\n', total_contracts*2);
@@ -160,7 +162,7 @@ fprintf('Total contracts: %d\n', size(dataset,2));
 fprintf('=================================================================\n');
 
 % Save dataset
-headers = {'S0','m','r','T','callput','alpha','beta','omega','gamma','lambda','sigma','V'}';
-dataset_enhanced = [headers'; num2cell(dataset')];
-filename = sprintf('GJR_%dK.csv', (total_contracts*2)/1000);
-writecell(dataset_enhanced,filename);
+% headers = {'S0','m','r','T','corp','alpha','beta','omega','gamma','lambda','sigma','V'}';
+% dataset_enhanced = [headers'; num2cell(dataset')];
+% filename = sprintf('GJR_%dK.csv', (total_contracts)/1000);
+% writecell(dataset_enhanced,filename);

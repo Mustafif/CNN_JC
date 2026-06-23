@@ -3,20 +3,20 @@
 
 [model]
 # Model type: "HN" (Heston-Nandi), "Duan", or "GJR"
-type = "Duan"
+type = "HN"
 
 [scaling]
 # Number of option contracts to generate per day
-contracts_per_day = 150
+contracts_per_day = 40
 
 # Number of trading days to simulate
-num_days = 100
+num_days = 25
 
 # Batch size for processing
 batch_size = 1000
 
 # Number of parameter sets to generate
-num_param_sets = 1
+num_param_sets = 10
 
 [market]
 # Number of time steps in GARCH simulation
@@ -57,7 +57,7 @@ optimize_memory = true
 # Noise level to add to option prices (0.0 = no noise)
 # This is the standard deviation as a percentage of the option price
 # For example: 0.01 = 1% noise, 0.05 = 5% noise, 0.0 = no noise
-level = 0.01
+level = 0.0
 
 # Random seed for noise generation (set to -1 for random seed)
 seed = 42
@@ -65,7 +65,7 @@ seed = 42
 [output]
 # Output folder (will be created if it doesn't exist)
 # If empty, uses auto-generated timestamp-based folder
-folder = "Duan_Set1_Noise1Perc"
+folder = "HN_20K"
 
 # Output file basename (without extension)
 # If empty, uses "dataset_<model_type>"
