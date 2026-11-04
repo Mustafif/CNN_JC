@@ -7,16 +7,16 @@ type = "HN"
 
 [scaling]
 # Number of option contracts to generate per day
-contracts_per_day = 40
+contracts_per_day = 50
 
 # Number of trading days to simulate
-num_days = 25
+num_days = 40
 
 # Batch size for processing
 batch_size = 1000
 
 # Number of parameter sets to generate
-num_param_sets = 10
+num_param_sets = 25
 
 [market]
 # Number of time steps in GARCH simulation
@@ -51,7 +51,7 @@ use_gpu = true
 num_workers = 0
 
 # Optimize for memory vs speed
-optimize_memory = true
+optimize_memory = false
 
 [noise]
 # Noise level to add to option prices (0.0 = no noise)
@@ -65,7 +65,7 @@ seed = 42
 [output]
 # Output folder (will be created if it doesn't exist)
 # If empty, uses auto-generated timestamp-based folder
-folder = "HN_20K"
+folder = "HN2_100K"
 
 # Output file basename (without extension)
 # If empty, uses "dataset_<model_type>"
