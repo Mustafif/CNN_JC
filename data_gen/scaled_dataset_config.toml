@@ -3,7 +3,7 @@
 
 [model]
 # Model type: "HN" (Heston-Nandi), "Duan", or "GJR"
-type = "HN"
+type = "Duan"
 
 [scaling]
 # Number of option contracts to generate per day
@@ -65,7 +65,7 @@ seed = 42
 [output]
 # Output folder (will be created if it doesn't exist)
 # If empty, uses auto-generated timestamp-based folder
-folder = "HN2_100K"
+folder = "Duan2_100K"
 
 # Output file basename (without extension)
 # If empty, uses "dataset_<model_type>"

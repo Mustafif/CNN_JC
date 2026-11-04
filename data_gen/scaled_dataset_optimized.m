@@ -306,21 +306,22 @@ for batch = 1:num_batches
         
         % Contract parameters
         moneyness = all_moneyness(contract_idx);
-        K_strike = moneyness * S_current;
+        K_call = S_current / moneyness;
+        K_put  = S_current * moneyness;
         T_maturity = T_years(mod(contract_in_day - 1, length(T_years)) + 1);
         
         try
             % Price options
-            [V_C, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, 1);
-            [V_P, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_strike, -1);
+            [V_C, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_call, 1);
+            [V_P, ~] = American(nodes_S, P_Xt, q_Xt, r, T_maturity, S_current, K_put, -1);
             
             if V_C < 0 || V_P < 0 || isnan(V_C) || isnan(V_P)
                 continue;
             end
             
             % Implied volatility (can be slow, consider parallelizing this too)
-            [impl_c, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity, r, V_C, 1, N, m_x, gamma_x);
-            [impl_p, ~, ~] = impvol_fzero(S_current, K_strike, T_maturity, r, V_P, -1, N, m_x, gamma_x);
+            [impl_c, ~, ~] = impvol_fzero(S_current, K_call, T_maturity, r, V_C, 1, N, m_x, gamma_x);
+            [impl_p, ~, ~] = impvol_fzero(S_current, K_put, T_maturity, r, V_P, -1, N, m_x, gamma_x);
             
             % Store results
             batch_calls(:, i) = [S_current; moneyness; r; T_maturity; 1; ...

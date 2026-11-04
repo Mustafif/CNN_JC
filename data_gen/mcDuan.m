@@ -29,7 +29,7 @@ function [S, h0] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, theta,lambda)
 
     % Calculate initial variance (long-run variance under Duan's specification)
     % Note: omega is not scaled as it represents daily variance
-    h0 = omega/(1 - alpha - beta);
+    h0 = omega/(1 - alpha*(1+theta^2) - beta);
 
     % Set initial conditions
     ht(1, :) = h0;
@@ -42,13 +42,14 @@ function [S, h0] = mcDuan(M, N, S0, Z, r, omega, alpha, beta, theta,lambda)
         ht(i, :) = omega + ...                            % Constant term (daily)
                    beta * ht(i-1, :) + ...                % GARCH effect
                    alpha * ht(i-1, :) .* ...              % ARCH effect
-                   (Z(i-1, :) - theta - lambda).^2;       % Innovations
+                   (Z(i-1, :) - theta).^2;       % Innovations
         
         % Compute log-returns
         % Only the drift terms need dt scaling as they are annualized
         Xt = r * dt - ...      % Risk premium (no dt scaling as it works with volatility)
              0.5 * ht(i, :) + ...             % Volatility adjustment (no dt as it's daily variance)
-             Z(i, :) * sqrt(ht(i, :));        % Diffusion term (no dt as Z scales with daily volatility)
+             Z(i, :) * sqrt(ht(i, :))...
+             + lambda * sqrt(ht(i, :));        % Diffusion term (no dt as Z scales with daily volatility)
         
         % Update asset prices
         S(i, :) = S(i-1, :) .* exp(Xt);
